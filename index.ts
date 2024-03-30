@@ -3,10 +3,12 @@ import { Server, Socket } from "socket.io";
 import http from 'http';
 import cors from "cors";
 import AuctionRoom from "./Auction";
+import axios from "axios"
 
 const app = express()
 const port = 3000
 const server = http.createServer(app);
+
 
 const io = new Server(server, {
     connectionStateRecovery: {},
@@ -27,7 +29,6 @@ function middleware(req, res, next) {
     if (true) {
       next();
     }
-
     res.json({error:true})
 }
 
@@ -94,8 +95,10 @@ io.on("connection", (socket) => {
     if (checkifUserAlreadyJoined(roomid, userName)) {
       console.log("user already on room so no restricted to join again")
       return;
+    } else {
+      addMemberToGroup(roomid,userName)
     }
-    addMemberToGroup(roomid,userName)
+
     socket.join(roomid)
     io.to(roomid).emit("users_added", getUsers(roomid))
     socket.on("start-auction",async (msg) => {
