@@ -1,14 +1,21 @@
+require("dotenv").config();
 import express from "express";
 import { Server, Socket } from "socket.io";
 import http from 'http';
 import cors from "cors";
 import AuctionRoom from "./Auction";
 import axios from "axios"
+import AuthRoutes from "./routes/auth"
+import cookieParser from "cookie-parser"
+
 
 const app = express()
 const port = 3000
 const server = http.createServer(app);
 
+app.use("/auth", AuthRoutes)
+app.use(cors())
+app.use(cookieParser())
 
 const io = new Server(server, {
     connectionStateRecovery: {},
@@ -28,11 +35,12 @@ function middleware(req, res, next) {
     var name = req.query.name;
     if (true) {
       next();
+      return;
     }
     res.json({error:true})
 }
 
-app.get("/getmyprofile", middleware, (req,res) => {
+app.get("/profile", middleware, (req,res) => {
     res.json({
       name:"yuva",age:19
     })
@@ -112,7 +120,5 @@ io.on("connection", (socket) => {
       auction_room.start()
     })
 })
-
-
 
 server.listen(port, () => console.log("Server is listening at PORT:", port))

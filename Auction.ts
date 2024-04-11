@@ -24,7 +24,10 @@ class AuctionRoom {
     sold_players;
     unsold_players;
     allSockets;
-    AvailablePlayers = playersData["data"].slice(0,100)
+    AvailablePlayers = playersData["data"].slice(0,120)
+
+
+
     constructor(io, socket, roomid, users, allSockets) {
         this.io = io
         this.roomid = roomid
