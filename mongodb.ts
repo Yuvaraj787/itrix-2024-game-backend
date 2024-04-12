@@ -3,6 +3,7 @@ import { MongoClient } from "mongodb";
 // Replace with your MongoDB connection string
 const uri =
   "mongodb+srv://user_purple:test123@gamedata.esztpbe.mongodb.net/?retryWrites=true&w=majority&appName=GameData" as string;
+
 const options = {};
 
 declare global {
@@ -46,19 +47,19 @@ async function createCollections() {
     .toArray()
     .then((collections) => collections.some((c) => c.name === collectionName));
 
-    const schema = {
-       name : String ,
-       email : String ,
-       cegain : Boolean ,
-       isVerfied : Boolean ,
-       otp : Number ,
-       validTill : Date , 
-       bought_passes : Array
+  const schema = {
+    name: String,
+    email: String,
+    cegain: Boolean,
+    isVerfied: Boolean,
+    otp: Number,
+    validTill: Date,
+    bought_passes: Array,
+    password: String,
+  };
+  const option = { validator: { $jsonSchema: schema } };
 
-    };
-    const option = { validator: { $jsonSchema: schema } };
-
-    console.log(doesCollectionExist)
+  console.log(doesCollectionExist);
 
   if (!doesCollectionExist) {
     await db.createCollection(collectionName, option);
@@ -68,7 +69,7 @@ async function createCollections() {
   }
 }
 
-createCollections()
+createCollections();
 
 // Export a module-scoped MongoClient promise.
 // By doing this in a separate module,

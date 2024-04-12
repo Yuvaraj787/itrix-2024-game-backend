@@ -4,8 +4,7 @@ import { Server, Socket } from "socket.io";
 import http from 'http';
 import cors from "cors";
 import AuctionRoom from "./Auction";
-import axios from "axios"
-import AuthRoutes from "./routes/auth"
+import AuthRoutes, { middleware } from "./routes/auth"
 import cookieParser from "cookie-parser"
 import bodyParser from "body-parser"
 
@@ -13,12 +12,17 @@ const app = express()
 const port = 3000
 const server = http.createServer(app);
 
-
+app.use(cors())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use("/auth", AuthRoutes)
-app.use(cors())
-app.use(cookieParser())
+
+// this is Protected Route 
+app.get("/profile", middleware, (req:any,res:any) => {
+  res.json({
+    name:"yuva",age:19
+  })
+})
 
 const io = new Server(server, {
     connectionStateRecovery: {},
@@ -33,30 +37,12 @@ const rooms = [{
   members: []
 }];
 
-
-function middleware(req, res, next) {
-    var name = req.query.name;
-    if (true) {
-      next();
-      return;
-    }
-    res.json({error:true})
-}
-
-app.get("/profile", middleware, (req,res) => {
-    res.json({
-      name:"yuva",age:19
-    })
-})
-
-
 function addRooms(room_id) {
     var duplicate = false;
     if (!rooms.includes(room_id)) {
       rooms.push({roomid : room_id, members : []});
     }
 } 
-
 
 
 function checkifUserAlreadyJoined(roomid, username) {

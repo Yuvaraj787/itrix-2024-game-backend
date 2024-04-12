@@ -1,30 +1,28 @@
 import { Router } from "express";
-import {
-  sendVerificationLink,
-  verifyEmailTokenInServer,
-  verifyToken,
-  signUp,
-  verifyOtp,
-  resendOtp,
-} from "../action";
+import { signUp, verifyOtp, resendOtp, login, verifyResetPassword } from "../action";
+import { body } from "express-validator";
+
+import { verifyToken } from "../utils";
+import { loginValidator } from "../validators";
 
 const router = Router();
 
-router.post("/sendVerificationLink", async (req: any, res: any) => {
-  try {
-    console.log("request came", req.query);
-    await sendVerificationLink(req.query.email);
-    res.json({ success: true });
-  } catch (err) {
-    console.log("ERROR: " + err.message);
-  }
-});
+router.post(
+  "/login",
 
-/////////////////////////////////////////////////
+  async (req: any, res: any) => {
+    try {
+      const data = await login(req.body);
+      res.json(data);
+    } catch (err) {
+      console.log("ERROR: " + err.message);
+      res.json({ success: false, message: "Error", data: {} });
+    }
+  }
+);
 
 router.post("/signup", async (req: any, res: any) => {
   try {
-    console.log("request came", req.query);
     const data = await signUp(req.body);
     res.json(data);
   } catch (err) {
@@ -47,7 +45,7 @@ router.post("/verifyOtp", async (req: any, res: any) => {
 router.post("/resendOtp", async (req: any, res: any) => {
   try {
     console.log("request came", req.query);
-    const data = await resendOtp(req.body);
+    const data = await resendOtp(req.body, "Resending OTP");
     res.json(data);
   } catch (err) {
     console.log("ERROR: " + err.message);
@@ -55,46 +53,56 @@ router.post("/resendOtp", async (req: any, res: any) => {
   }
 });
 
-//////////////////////////////////////////////////
+export const middleware = (req: any, res: any, next: any) => {
+  const token = req.headers["authorization"];
 
-function middleware(req, res, next) {
-  console.log("middleware triggered ", req.query.token);
-  verifyToken(req.query.token)
-    .then((msg) => {
-      console.log(msg);
-      next();
-    })
-    .catch((err) => {
-      res.json({ success: false });
-    });
-}
+  if (typeof token !== "undefined") {
+    const jwt = token.split(" ")[1];
+    verifyToken(jwt)
+      .then((msg) => {
+        req.data = msg;
+        next();
+      })
+      .catch((err) => {
+        res
+          .status(498)
+          .json({ success: false, message: "Invalid/Expired JWT", data: {} });
+      });
+  } else {
+    res
+      .status(498)
+      .json({ success: false, message: "Token Not Found", data: {} });
+  }
+};
 
-router.get("/verifyCookie", middleware, (req, res) => {
-  res.json({ success: true });
+router.post("/resetPasswordOtp", async (req: any, res: any) => {
+  try {
+    const data = await resendOtp(req.body, "OTP for Reseting password");
+    res.json(data);
+  } catch (err) {
+    console.log("ERROR: " + err.message);
+    res.json({ success: false, message: "Operation failed", data: {} });
+  }
 });
 
-router.get("/verify", async (req, res) => {
-  console.log("Verify triggered ", req.query.token);
-  verifyEmailTokenInServer(req.query.token)
-    .then(
-      (message) => {
-        console.log(message);
-        if (!message.error) {
-          console.log("Verfied successfully ", message);
-          res.redirect(
-            process.env.CLIENT_IP + "/join_room?setToken=" + message.msg
-          );
-        } else {
-          res.redirect(process.env.CLIENT_IP + "/login");
-        }
-      },
-      (err) => {
-        console.log("Not verfied : ", err);
-      }
-    )
-    .catch((err) => {
-      console.log("error : ", err);
-    });
+router.post("/verifyResetPassword", async (req: any, res: any) => {
+  try {
+    const data = await verifyResetPassword(req.body)
+    res.json(data);
+  } catch (err) {
+    console.log("ERROR: " + err.message);
+    res.json({ success: false, message: "Operation failed", data: {} });
+  }
 });
+
+router.get("/verifyToken", middleware, (req, res) => {
+  res.json({ success: true, message: "JWT Verified", data: req.data });
+});
+
+/*
+ need to do reset password , 
+ convert to mongoose ,
+ adding validator 
+*/
 
 export default router;
