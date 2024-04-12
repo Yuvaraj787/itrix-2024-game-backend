@@ -1,11 +1,9 @@
 import { body } from "express-validator";
 
-export const loginValidator = async(req,res,next)=>{
+export const loginValidator = async (req, res, next) => {
+  body("email").isEmail().notEmpty().withMessage("email is empty");
 
-    body("email").isEmail().notEmpty()
+  body("passord").isString().notEmpty().withMessage("password is empty");
 
-    body("password").isString().notEmpty()
-
-    next()
-
-}
+  next();
+};

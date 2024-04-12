@@ -1,15 +1,31 @@
 import { Router } from "express";
-import { signUp, verifyOtp, resendOtp, login, verifyResetPassword } from "../action";
+import {
+  signUp,
+  verifyOtp,
+  resendOtp,
+  login,
+  verifyResetPassword,
+} from "../action";
 import { body } from "express-validator";
 
-import { verifyToken } from "../utils";
+import { googleRecaptcha, rateLimiting, verifyToken } from "../utils";
 import { loginValidator } from "../validators";
 
 const router = Router();
 
+router.use((req: any, res: any, next: any) => {
+  if (req.path === "/verifyToken") {
+    next();
+  } else {
+    res.setHeader("Content-type", "application/json");
+    return rateLimiting(req, res, next);
+  }
+});
+
 router.post(
   "/login",
-
+  loginValidator,
+  googleRecaptcha,
   async (req: any, res: any) => {
     try {
       const data = await login(req.body);
@@ -21,7 +37,7 @@ router.post(
   }
 );
 
-router.post("/signup", async (req: any, res: any) => {
+router.post("/signup", googleRecaptcha, async (req: any, res: any) => {
   try {
     const data = await signUp(req.body);
     res.json(data);
@@ -31,7 +47,7 @@ router.post("/signup", async (req: any, res: any) => {
   }
 });
 
-router.post("/verifyOtp", async (req: any, res: any) => {
+router.post("/verifyOtp", googleRecaptcha, async (req: any, res: any) => {
   try {
     console.log("request came", req.query);
     const data = await verifyOtp(req.body);
@@ -42,7 +58,7 @@ router.post("/verifyOtp", async (req: any, res: any) => {
   }
 });
 
-router.post("/resendOtp", async (req: any, res: any) => {
+router.post("/resendOtp", googleRecaptcha, async (req: any, res: any) => {
   try {
     console.log("request came", req.query);
     const data = await resendOtp(req.body, "Resending OTP");
@@ -75,34 +91,36 @@ export const middleware = (req: any, res: any, next: any) => {
   }
 };
 
-router.post("/resetPasswordOtp", async (req: any, res: any) => {
-  try {
-    const data = await resendOtp(req.body, "OTP for Reseting password");
-    res.json(data);
-  } catch (err) {
-    console.log("ERROR: " + err.message);
-    res.json({ success: false, message: "Operation failed", data: {} });
+router.post(
+  "/resetPasswordOtp",
+  googleRecaptcha,
+  async (req: any, res: any) => {
+    try {
+      const data = await resendOtp(req.body, "OTP for Reseting password");
+      res.json(data);
+    } catch (err) {
+      console.log("ERROR: " + err.message);
+      res.json({ success: false, message: "Operation failed", data: {} });
+    }
   }
-});
+);
 
-router.post("/verifyResetPassword", async (req: any, res: any) => {
-  try {
-    const data = await verifyResetPassword(req.body)
-    res.json(data);
-  } catch (err) {
-    console.log("ERROR: " + err.message);
-    res.json({ success: false, message: "Operation failed", data: {} });
+router.post(
+  "/verifyResetPassword",
+  googleRecaptcha,
+  async (req: any, res: any) => {
+    try {
+      const data = await verifyResetPassword(req.body);
+      res.json(data);
+    } catch (err) {
+      console.log("ERROR: " + err.message);
+      res.json({ success: false, message: "Operation failed", data: {} });
+    }
   }
-});
+);
 
 router.get("/verifyToken", middleware, (req, res) => {
   res.json({ success: true, message: "JWT Verified", data: req.data });
 });
-
-/*
- need to do reset password , 
- convert to mongoose ,
- adding validator 
-*/
 
 export default router;
