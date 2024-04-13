@@ -6,17 +6,22 @@ import cors from "cors";
 import AuctionRoom from "./Auction";
 import axios from "axios"
 import AuthRoutes from "./routes/auth"
+import ScoreManagement from "./routes/scores_management"
 import cookieParser from "cookie-parser"
 import bodyParser from "body-parser"
+import mongoose from "mongoose";
 
 const app = express()
 const port = 3000
 const server = http.createServer(app);
+const monogDB = "mongodb+srv://user_purple:test123@gamedata.esztpbe.mongodb.net/?retryWrites=true&w=majority&appName=GameData";
+
 
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use("/auth", AuthRoutes)
+app.use("/scores",ScoreManagement)
 app.use(cors())
 app.use(cookieParser())
 
@@ -208,4 +213,14 @@ io.on("connection", (socket) => {
 
 })
 
-server.listen(port, () => console.log("Server is listening at PORT:", port))
+
+mongoose
+.connect(monogDB)
+.then(()=>{
+  server.listen(port, () => console.log("Server is listening at PORT :", port))
+})
+.catch((error)=>{
+    console.log(error);
+})
+
+
