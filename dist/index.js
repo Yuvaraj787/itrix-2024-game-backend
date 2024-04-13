@@ -13,5 +13,5 @@ const socket = new socket_io_1.Server(3001);
 socket.on("connection", () => {
     console.log("User connected");
 });
-server.listen(port, () => console.log("Server is listening at PORT:", port));
+server.listen(port, () => console.log("Serverr is listening at PORT:", port));
 //# sourceMappingURL=index.js.map
