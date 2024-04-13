@@ -1,8 +1,8 @@
-
 import { createTransport } from "nodemailer";
 import { sign, verify } from "jsonwebtoken";
 import { google } from "googleapis";
 import clientPromise from "./mongodb";
+import { sendMail } from "./utils";
 
 const transport = createTransport({
   host: process.env.SMTP_SERVER,
@@ -13,6 +13,186 @@ const transport = createTransport({
     pass: process.env.PASSWD,
   },
 });
+
+/*
+   user Schema : 
+   name,
+   email,
+   isVerified ,
+   isCegian ,
+   otp ,
+   validTill ,
+   bought_passes 
+*/
+// create new User
+
+export async function signUp(data: any) {
+  const { name, email, isCegian } = data;
+
+  // need to do validity checks
+
+  const db = (await clientPromise).db("itrix");
+
+  const users = db.collection("users");
+
+  const isUserExist = await users.findOne({
+    email,
+  });
+
+  if (isUserExist) {
+    return {
+      success: false,
+      message: "User Already exists",
+      data: {},
+    };
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000);
+
+  // send mail
+  const timeNow = new Date();
+
+  timeNow.setSeconds(timeNow.getSeconds() + 120);
+
+  await sendMail(
+    "Auction Game - OTP",
+    email,
+    otp,
+    timeNow, new Date() 
+  );
+
+  await users.insertOne({
+    name,
+    email,
+    isCegian,
+    isVerified: false,
+    otp,
+    validTill: timeNow,
+    bought_passes: [],
+  });
+
+  return {
+    success: true,
+    message: "Check Mail for otp",
+    data: {},
+  };
+}
+
+// verify Otp
+export async function verifyOtp(data: any) {
+  const { email, otp } = data;
+
+  const db = (await clientPromise).db("itrix");
+
+  const users = db.collection("users");
+
+  const isUserExist = await users.findOne({
+    email,
+  });
+
+  if (!isUserExist) {
+    return {
+      success: false,
+      message: "Please Signup First",
+      data: {},
+    };
+  }
+
+  if (isUserExist.isVerified) {
+    return {
+      success: false,
+      message: "User already verified",
+      data: {},
+    };
+  }
+
+  console.log(otp, Number(isUserExist.otp));
+
+  if (Number(otp) === Number(isUserExist.otp)) {
+    const validTime = new Date(isUserExist.validTill).getTime();
+
+    const currentTime = new Date().getTime();
+
+    if (validTime >= currentTime) {
+      await users.updateOne(
+        {
+          email,
+        },
+        {
+          $set: {
+            otp: -1,
+            isVerified: true,
+          },
+        }
+      );
+      return {
+        success: true,
+        message: "OTP Verified",
+        data: {},
+      };
+    }
+  }
+
+  return {
+    success: false,
+    message: "Not Valid OTP",
+    data: {},
+  };
+}
+
+// resend otp
+
+export async function resendOtp(data: any) {
+  const email = data.email;
+
+  const db = (await clientPromise).db("itrix");
+
+  const users = db.collection("users");
+
+  const user = await users.findOne({
+    email,
+  });
+
+  if (!user) {
+    return {
+      success: false,
+      message: "Please Signup First",
+      data: {},
+    };
+  }
+
+  if (user.isVerified) {
+    return {
+      success: false,
+      message: "User already verified",
+      data: {},
+    };
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000);
+
+  // send mail
+  const timeNow = new Date();
+
+  timeNow.setSeconds(timeNow.getSeconds() + 120);
+
+  await sendMail("Auction Game - New OTP", email, otp, timeNow, new Date());
+
+  await users.updateOne(
+    {
+      email,
+    },
+    {
+      $set: { otp, validTill: timeNow },
+    }
+  );
+
+  return {
+    success: true,
+    message: "Check Mail Again",
+    data: {},
+  };
+}
 
 export async function generateEmailToken(emailId: string) {
   return generateToken(emailId, "10m");
@@ -61,7 +241,6 @@ export async function verifyToken(token: string): Promise<string | null> {
 export async function verifyEmailTokenInServer(
   token: string
 ): Promise<{ msg: string; error?: string }> {
-
   try {
     const email = await verifyToken(token);
     if (email == null) {
@@ -74,10 +253,6 @@ export async function verifyEmailTokenInServer(
     const collectionExists = await db
       .listCollections({ name: "users" })
       .hasNext();
-
-    if (!collectionExists) {
-      await db.createCollection("users");
-    }
 
     const users = db.collection("users");
 
@@ -98,16 +273,14 @@ export async function verifyEmailTokenInServer(
 
     return { msg: cookieToken };
   } catch (e: any) {
-    console.log("Error in verifying email token " + e.message)
+    console.log("Error in verifying email token " + e.message);
     return { msg: "", error: "Token Error" };
   }
 }
 
-
-
 export async function sendVerificationLink(email: string): Promise<string> {
   const token = await generateEmailToken(email);
-  console.log(token)
+  console.log(token);
   return new Promise((resolve, reject) => {
     transport.sendMail(
       {
@@ -127,12 +300,12 @@ export async function sendVerificationLink(email: string): Promise<string> {
         `,
       },
       (error, info) => {
-        console.log("Error hi ", error)
+        console.log("Error hi ", error);
         if (error != null) {
           return reject(error?.message);
         }
-        console.log(error, info)
-        console.log("I am happening")
+        console.log(error, info);
+        console.log("I am happening");
         if (info.accepted) return resolve("");
         else return resolve(info.response);
       }

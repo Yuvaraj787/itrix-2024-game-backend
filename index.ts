@@ -7,63 +7,16 @@ import AuctionRoom from "./Auction";
 import axios from "axios"
 import AuthRoutes from "./routes/auth"
 import cookieParser from "cookie-parser"
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Mutex } from "async-mutex";
-
-
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
-
-async function run() {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro"});
-
-  // var n = gameData.length;
-  var formated = {}
-  // for (var i = 0; i < n; i++) {
-  //   if (formated[gameData[i].username]) {
-  //     formated[gameData[i].username].push({
-  //       player_name : gameData[i].player.fullname
-  //     })
-  //   } else {
-  //     formated[gameData[i].username] = [];
-  //     i--;
-  //   }
-  // }
-  formated = {
-    yuvaraj: [
-      { player_name: 'Jasprit Bumrah' },
-      { player_name: 'Travis Head' },
-      { player_name: 'Ravichandran Ashwin' },
-      { player_name: 'Virat Kohli' },
-      { player_name: 'Rohit Sharma' }
-    ],
-    muthu: [
-      { player_name: 'Trent Boult' },
-      { player_name: 'David Warner' },
-      { player_name: 'Ravindra Jadeja' },
-      { player_name: 'Ruturaj Gaikwad' },
-      { player_name: 'Tilak Varma' }
-    ]
-  }
-  console.log(formated)
-  formated = JSON.stringify(formated)
-  const prompt = formated + ". Analyse these data which is collected during mock ipl auction and give the score (1-10) to the each user who picked best players and balanced team and rank them in ascending order. format them by username, batting_score, bowling_score, overall_score, rank (respect to overall score),justification for points and array of players name picked by the corressponding user  in js object. no other thing required just give only js object. consider batting, bowling, wicket-keeping and allrounder equally (Consider all  T20 stats of these players and give fair points). start with { end with }.strictly no other things  "
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  const text = response.text();
-  var k = JSON.parse(text)
-  console.log(k)
-}
-// run()
-
-// Access your API key as an environment variable (see "Set up your API key" above)
-
+import bodyParser from "body-parser"
 
 const app = express()
 const port = 3000
 const server = http.createServer(app);
 
-// app.use("/auth", AuthRoutes)
+
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+app.use("/auth", AuthRoutes)
 app.use(cors())
 app.use(cookieParser())
 
@@ -254,6 +207,5 @@ io.on("connection", (socket) => {
     })
 
 })
-
 
 server.listen(port, () => console.log("Server is listening at PORT:", port))
