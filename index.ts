@@ -215,7 +215,6 @@ io.on("connection", (socket) => {
             }
           })
       }, 2000)
-
     })
 
 })
