@@ -81,14 +81,34 @@ router.put("/", (req, res) => {
 });
 
 // Route to get the updated data
-router.get("/", (req, res) => {
-  getCollectionDetails("scores").then(collectionDetails => {
-    console.log(JSON.stringify(collectionDetails, null, 2));
-    res.send("true");
-  }).catch(error => {
-    console.error("Error:", error);
-    res.send("false");
+router.get("/", async (req, res) => {
+    try {
+      // Access the database
+      const client = await clientPromise;
+      const db = client.db("itrix");
+      
+      // Fetch points of all users and sort them in descending order
+      const users = await db.collection("scores")
+                            .find({})
+                            .sort({ score: -1 }) // Sort by score in descending order
+                            .toArray();
+  
+      // Response format: array of user objects
+      const response = users.map(user => {
+        return {
+          username: user.username,
+          points: user.score,
+          matches_played: user.matches_played,
+          matches_won: user.matches_won
+        };
+      });
+  
+      // Respond with the sorted array of user objects
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching and sorting user points:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
   });
-});
 
 export default router;
