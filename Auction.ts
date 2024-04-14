@@ -71,8 +71,8 @@ class AuctionRoom {
         this.io = io
         this.roomid = roomid
         this.socket = socket
-        this.biddingTime = 2;
-        this.waitingTime = 2;
+        this.biddingTime = 7;
+        this.waitingTime = 3;
         this.counter = this.biddingTime
         this.users = {}
         console.log(users)
@@ -95,15 +95,11 @@ class AuctionRoom {
             player["countryName"] = countryInfo.countryName
             player["flagUrl"] = countryInfo.flagUrl
         });
-        this.allSockets.forEach(skt => {
-            skt.on("disconnect", () => {
-                console.log("User disconnect after auction started")
-            })
-        });
     }
 
-    
-    
+    markUserHasDisconnected(username) {
+        this.users[username].disconnected = true
+    }
 
     getRandomPlayer() {
         var no = Math.floor(Math.random() * this.AvailablePlayers.length)
@@ -133,7 +129,7 @@ class AuctionRoom {
             if (this.counter == 0) {
                 if (this.typeOfTimer == "bidding timer") {
                     if (this.last_bid.player.currentPrice == 0) {
-                        this.io.to(this.roomid).emit("unsold", player)
+                        this.io.to(this.roomid).emit("unsold", this.last_bid)
                     } else {
                         this.sold_players.push(this.last_bid)
                         this.users[this.last_bid.username].amountLeft -= this.last_bid.player.currentPrice
@@ -141,7 +137,7 @@ class AuctionRoom {
                         
                         this.io.to(this.roomid).emit("sold", [this.last_bid,this.sold_players, this.users])
                     }
-
+                    setTimeout(() => {}, 1000)
                     if (this.isGameOver()) {
                         console.log(this.sold_players)
                         this.io.to(this.roomid).emit("game-over","game-over")

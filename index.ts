@@ -10,6 +10,7 @@ import ScoreManagement from "./routes/scores_management"
 import cookieParser from "cookie-parser"
 import bodyParser from "body-parser"
 import mongoose from "mongoose";
+import { Mutex } from "async-mutex";
 
 const app = express()
 const port = 3000
@@ -20,7 +21,7 @@ const monogDB = "mongodb+srv://user_purple:test123@gamedata.esztpbe.mongodb.net/
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
-app.use("/auth", AuthRoutes)
+// app.use("/auth", AuthRoutes)
 app.use("/scores",ScoreManagement)
 app.use(cors())
 app.use(cookieParser())
@@ -175,10 +176,16 @@ io.on("connection", (socket) => {
     }
 
     socket.on("disconnect", () => {
-      console.log(userName + " client disconnected so removed from room before starting auction");
-      removeUserfromRoom(roomid, userName)
-      console.log(rooms)
-      io.to(roomid).emit("users_added", getUsers(roomid))
+      if (isRoomHasStarted(roomid)) {
+          console.log("Client disconnected after auction started")
+          let roomObj = getRoombj(roomid)
+          roomObj.markUserHasDisconnected(userName)
+      } else {
+          console.log("Client disconnected before auction started");
+          removeUserfromRoom(roomid, userName)
+          console.log(rooms)
+          io.to(roomid).emit("users_added", getUsers(roomid))
+      }
     })
 
     socket.join(roomid)
@@ -213,14 +220,6 @@ io.on("connection", (socket) => {
 
 })
 
-
-mongoose
-.connect(monogDB)
-.then(()=>{
-  server.listen(port, () => console.log("Server is listening at PORT :", port))
-})
-.catch((error)=>{
-    console.log(error);
-})
+server.listen(port, () => console.log("Server is listening at PORT :", port))
 
 
