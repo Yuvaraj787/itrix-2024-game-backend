@@ -51,7 +51,7 @@ export async function signUp(data: any) {
 
   timeNow.setSeconds(timeNow.getSeconds() + 120);
 
-  await sendMail("Auction Game - OTP", email, otp, timeNow, new Date(),"");
+  await sendMail("Auction Game - OTP", email, otp, timeNow, new Date(), "");
 
   await users.insertOne({
     name,
@@ -219,6 +219,14 @@ export async function login(data: any) {
     return {
       success: false,
       message: "Account not found, Please Signup",
+      data: {},
+    };
+  }
+
+  if (isUserExist.isVerified === false) {
+    return {
+      success: false,
+      message: "Account not Verified, Visit Signup Page",
       data: {},
     };
   }

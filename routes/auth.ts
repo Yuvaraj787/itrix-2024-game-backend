@@ -6,8 +6,6 @@ import {
   login,
   verifyResetPassword,
 } from "../action";
-import { body } from "express-validator";
-
 import { googleRecaptcha, rateLimiting, verifyToken } from "../utils";
 import { loginValidator } from "../validators";
 
@@ -76,6 +74,7 @@ export const middleware = (req: any, res: any, next: any) => {
     const jwt = token.split(" ")[1];
     verifyToken(jwt)
       .then((msg) => {
+        // decoded jwt token will be stored here !! 
         req.data = msg;
         next();
       })

@@ -46,7 +46,7 @@ export const googleRecaptcha = async (req: any, res: any, next: any) => {
 // this function blacklist malicious brute force request
 export const rateLimiting = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hrs in milliseconds
-  max: 20,
+  max: 200,
   message: '{"message":"Exceeded Request Limit" , "success":false,"data":{}}',
   headers: true,
 });
@@ -81,6 +81,9 @@ export const sendMail = async (
   createdAt: any,
   message: any
 ) => {
+
+  let result = false 
+
   await transport.sendMail(
     {
       from: "admin@istaceg.in",
@@ -102,16 +105,22 @@ export const sendMail = async (
             </div>
           `,
     },
+    
     (error, info) => {
       if (error) {
         console.log("Error: ", error, "mail", email);
-        return false;
+        result = false ;
       }
 
-      if (info.accepted) return true;
-      return false;
+      else if (info.accepted){
+        result = true ;
+      } 
+      else 
+       result = false;
     }
   );
+
+  return result ;
 };
 
 export async function verifyToken(token: string): Promise<string | null> {

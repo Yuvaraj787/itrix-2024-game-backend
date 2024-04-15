@@ -50,7 +50,7 @@ async function createCollections() {
   const schema = {
     name: String,
     email: String,
-    cegain: Boolean,
+    cegian: Boolean,
     isVerfied: Boolean,
     otp: Number,
     validTill: Date,
