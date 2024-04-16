@@ -2,6 +2,7 @@ import playersData from "./playersData.json"
 import countriesData from "./countries.json"
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Timestamp } from "mongodb";
+import { updateUserPoints } from "./routes/scores_management";
 
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
@@ -36,6 +37,19 @@ async function run(gameData) {
     console.log("Errors occured : " + Err.message)
     return {}
 }
+}
+
+
+async function updateToDB(scores) {
+    try {
+        let formateArray = [];
+        Object.keys(scores).map(un => {
+            formateArray.push({ username: un, ...scores[un]})
+        })
+        return await updateUserPoints(formateArray)
+    } catch (err) {
+        console.log("ERROR in updating scores to db : " + err.message)
+    }
 }
 
 
@@ -108,7 +122,6 @@ class AuctionRoom {
 
     isGameOver() {
         var gameOff = true;
-        console.log(this.users)
         Object.keys(this.users).forEach(user => {
             // if (!this.users[user].disconnected)
             if (!this.users[user].disconnected && this.users[user].slotsLeft > 0) {
@@ -137,13 +150,13 @@ class AuctionRoom {
                         
                         this.io.to(this.roomid).emit("sold", [this.last_bid,this.sold_players, this.users])
                     }
-                    setTimeout(() => {}, 1000)
+                    // setTimeout(() => {}, 1000)
                     if (this.isGameOver()) {
                         console.log(this.sold_players)
                         this.io.to(this.roomid).emit("game-over","game-over")
                         var scoresData = await run(this.sold_players);
                         this.io.to(this.roomid).emit("scores", scoresData)
-                        clearTimeout(this.timerId)
+                        updateToDB(scoresData);
                         return;
                     }
 
@@ -167,6 +180,7 @@ class AuctionRoom {
                     this.io.to(this.roomid).emit("game-over","game-over")
                     var scoresData = await run(this.sold_players);
                     this.io.to(this.roomid).emit("scores", scoresData)
+
                 } else {
                     var player = this.getRandomPlayer()
                     this.last_bid = {

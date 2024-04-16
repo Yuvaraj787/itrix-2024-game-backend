@@ -5,20 +5,20 @@ import http from 'http';
 import cors from "cors";
 import AuctionRoom from "./Auction";
 import axios from "axios"
-import AuthRoutes from "./routes/auth"
+// import AuthRoutes from "./routes/auth"
 import ScoreManagement from "./routes/scores_management"
 import cookieParser from "cookie-parser"
 import bodyParser from "body-parser"
 import mongoose from "mongoose";
 import { Mutex } from "async-mutex";
 
+import conn from "./mongodb"
+
 const app = express()
 const port = 3000
 const server = http.createServer(app);
 const monogDB = "mongodb+srv://user_purple:test123@gamedata.esztpbe.mongodb.net/?retryWrites=true&w=majority&appName=GameData";
-
-
-
+let b = conn
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 // app.use("/auth", AuthRoutes)
@@ -34,26 +34,7 @@ const io = new Server(server, {
     }
 });
 
-const rooms = [{
-  roomid: "default_room",
-  members: []
-}];
-
-
-function middleware(req, res, next) {
-    var name = req.query.name;
-    if (true) {
-      next();
-      return;
-    }
-    res.json({error:true})
-}
-
-app.get("/profile", middleware, (req,res) => {
-    res.json({
-      name:"yuva",age:19
-    })
-})
+const rooms = [];
 
 
 function addRooms(room_id) {
@@ -220,5 +201,3 @@ io.on("connection", (socket) => {
 })
 
 server.listen(port, () => console.log("Server is listening at PORT :", port))
-
-
