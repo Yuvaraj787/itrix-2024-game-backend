@@ -1,30 +1,42 @@
 import { Router } from "express";
 import {
-  sendVerificationLink,
-  verifyEmailTokenInServer,
-  verifyToken,
   signUp,
   verifyOtp,
   resendOtp,
+  login,
+  verifyResetPassword,
 } from "../action";
+import { googleRecaptcha, rateLimiting, verifyToken } from "../utils";
+import { loginValidator } from "../validators";
 
 const router = Router();
 
-router.post("/sendVerificationLink", async (req: any, res: any) => {
-  try {
-    console.log("request came", req.query);
-    await sendVerificationLink(req.query.email);
-    res.json({ success: true });
-  } catch (err) {
-    console.log("ERROR: " + err.message);
+router.use((req: any, res: any, next: any) => {
+  if (req.path === "/verifyToken") {
+    next();
+  } else {
+    res.setHeader("Content-type", "application/json");
+    return rateLimiting(req, res, next);
   }
 });
 
-/////////////////////////////////////////////////
+router.post(
+  "/login",
+  loginValidator,
+  googleRecaptcha,
+  async (req: any, res: any) => {
+    try {
+      const data = await login(req.body);
+      res.json(data);
+    } catch (err) {
+      console.log("ERROR: " + err.message);
+      res.json({ success: false, message: "Error", data: {} });
+    }
+  }
+);
 
-router.post("/signup", async (req: any, res: any) => {
+router.post("/signup", googleRecaptcha, async (req: any, res: any) => {
   try {
-    console.log("request came", req.query);
     const data = await signUp(req.body);
     res.json(data);
   } catch (err) {
@@ -33,7 +45,7 @@ router.post("/signup", async (req: any, res: any) => {
   }
 });
 
-router.post("/verifyOtp", async (req: any, res: any) => {
+router.post("/verifyOtp", googleRecaptcha, async (req: any, res: any) => {
   try {
     console.log("request came", req.query);
     const data = await verifyOtp(req.body);
@@ -44,10 +56,10 @@ router.post("/verifyOtp", async (req: any, res: any) => {
   }
 });
 
-router.post("/resendOtp", async (req: any, res: any) => {
+router.post("/resendOtp", googleRecaptcha, async (req: any, res: any) => {
   try {
     console.log("request came", req.query);
-    const data = await resendOtp(req.body);
+    const data = await resendOtp(req.body, "Resending OTP");
     res.json(data);
   } catch (err) {
     console.log("ERROR: " + err.message);
@@ -55,46 +67,59 @@ router.post("/resendOtp", async (req: any, res: any) => {
   }
 });
 
-//////////////////////////////////////////////////
+export const middleware = (req: any, res: any, next: any) => {
+  const token = req.headers["authorization"];
 
-function middleware(req, res, next) {
-  console.log("middleware triggered ", req.query.token);
-  verifyToken(req.query.token)
-    .then((msg) => {
-      console.log(msg);
-      next();
-    })
-    .catch((err) => {
-      res.json({ success: false });
-    });
-}
+  if (typeof token !== "undefined") {
+    const jwt = token.split(" ")[1];
+    verifyToken(jwt)
+      .then((msg) => {
+        // decoded jwt token will be stored here !! 
+        req.data = msg;
+        next();
+      })
+      .catch((err) => {
+        res
+          .status(498)
+          .json({ success: false, message: "Invalid/Expired JWT", data: {} });
+      });
+  } else {
+    res
+      .status(498)
+      .json({ success: false, message: "Token Not Found", data: {} });
+  }
+};
 
-router.get("/verifyCookie", middleware, (req, res) => {
-  res.json({ success: true });
-});
+router.post(
+  "/resetPasswordOtp",
+  googleRecaptcha,
+  async (req: any, res: any) => {
+    try {
+      const data = await resendOtp(req.body, "OTP for Reseting password");
+      res.json(data);
+    } catch (err) {
+      console.log("ERROR: " + err.message);
+      res.json({ success: false, message: "Operation failed", data: {} });
+    }
+  }
+);
 
-router.get("/verify", async (req, res) => {
-  console.log("Verify triggered ", req.query.token);
-  verifyEmailTokenInServer(req.query.token)
-    .then(
-      (message) => {
-        console.log(message);
-        if (!message.error) {
-          console.log("Verfied successfully ", message);
-          res.redirect(
-            process.env.CLIENT_IP + "/join_room?setToken=" + message.msg
-          );
-        } else {
-          res.redirect(process.env.CLIENT_IP + "/login");
-        }
-      },
-      (err) => {
-        console.log("Not verfied : ", err);
-      }
-    )
-    .catch((err) => {
-      console.log("error : ", err);
-    });
+router.post(
+  "/verifyResetPassword",
+  googleRecaptcha,
+  async (req: any, res: any) => {
+    try {
+      const data = await verifyResetPassword(req.body);
+      res.json(data);
+    } catch (err) {
+      console.log("ERROR: " + err.message);
+      res.json({ success: false, message: "Operation failed", data: {} });
+    }
+  }
+);
+
+router.get("/verifyToken", middleware, (req, res) => {
+  res.json({ success: true, message: "JWT Verified", data: req.data });
 });
 
 export default router;

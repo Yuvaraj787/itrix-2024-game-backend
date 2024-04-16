@@ -1,9 +1,11 @@
 require("dotenv").config();
 import express from "express";
 import { Server, Socket } from "socket.io";
-import http from 'http';
+import http from "http";
 import cors from "cors";
 import AuctionRoom from "./Auction";
+import AuthRoutes, { middleware } from "./routes/auth";
+import bodyParser from "body-parser";
 import axios from "axios"
 // import AuthRoutes from "./routes/auth"
 import ScoreManagement from "./routes/scores_management"
@@ -14,58 +16,63 @@ import { Mutex } from "async-mutex";
 
 import conn from "./mongodb"
 
-const app = express()
-const port = 3000
+const app = express();
+const port = 3000;
 const server = http.createServer(app);
-const monogDB = "mongodb+srv://user_purple:test123@gamedata.esztpbe.mongodb.net/?retryWrites=true&w=majority&appName=GameData";
-let b = conn
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
-// app.use("/auth", AuthRoutes)
-app.use("/scores",ScoreManagement)
-app.use(cors())
-app.use(cookieParser())
+
+app.use(cors());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+
+app.use("/auth", AuthRoutes);
+
+// this is Protected Route
+app.get("/profile", middleware, (req: any, res: any) => {
+  res.json({
+    name: "yuva",
+    age: 19,
+  });
+});
 
 const io = new Server(server, {
-    connectionStateRecovery: {},
-    cors: {
-      origin: ["http://localhost:5173","https://amritb.github.io"],
-      methods: ["GET", "POST"]
-    }
+  connectionStateRecovery: {},
+  cors: {
+    origin: ["http://localhost:5173", "https://amritb.github.io"],
+    methods: ["GET", "POST"],
+  },
 });
 
 const rooms = [];
 
 
 function addRooms(room_id) {
-    var duplicate = false;
-    if (!rooms.includes(room_id)) {
-      rooms.push({roomid : room_id, members : []});
-    }
-} 
-
-
+  var duplicate = false;
+  if (!rooms.includes(room_id)) {
+    rooms.push({ roomid: room_id, members: [] });
+  }
+}
 
 function checkifUserAlreadyJoined(roomid, username) {
-   var exist = false;
-    rooms.forEach(room => {
-      if (room.roomid == roomid) {
-        room.members.forEach(member => {
-          if (member == username) exist = true
-        })
-      }
-    })
-    return exist;
+  var exist = false;
+  rooms.forEach((room) => {
+    if (room.roomid == roomid) {
+      room.members.forEach((member) => {
+        if (member == username) exist = true;
+      });
+    }
+  });
+  return exist;
 }
 
 function addMemberToGroup(roomid, username) {
   var found = false;
-  rooms.forEach(room => {
+  rooms.forEach((room) => {
     if (room.roomid == roomid) {
-      found = true
-      room.members.push(username)
+      found = true;
+      room.members.push(username);
     }
-  })
+  });
 
   if (!found) {
     rooms.push({
@@ -113,8 +120,8 @@ function isRoomHasStarted(roomid) {
 }
 
 function getUsers(roomid) {
-  var needed_room = rooms.find(room => room.roomid == roomid)
-  return needed_room
+  var needed_room = rooms.find((room) => room.roomid == roomid);
+  return needed_room;
 }
 
 
@@ -128,8 +135,8 @@ function removeUserfromRoom(roomid, username) {
 
 
 io.on("connection", (socket) => {
-    var userName = socket.handshake.query.name
-    var roomid = socket.handshake.query.room_id || "default_room";
+  var userName = socket.handshake.query.name;
+  var roomid = socket.handshake.query.room_id || "default_room";
 
     console.log("User connected : ", userName , " request to join ", roomid)
 
@@ -200,4 +207,4 @@ io.on("connection", (socket) => {
 
 })
 
-server.listen(port, () => console.log("Server is listening at PORT :", port))
+server.listen(port, () => console.log("Server is listening at PORT :", port));

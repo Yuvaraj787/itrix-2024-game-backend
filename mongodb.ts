@@ -4,6 +4,7 @@ import { Collection } from "mongoose";
 // Replace with your MongoDB connection string
 const uri =
   "mongodb+srv://user_purple:test123@gamedata.esztpbe.mongodb.net/?retryWrites=true&w=majority&appName=GameData" as string;
+
 const options = {};
 
 declare global {
@@ -48,34 +49,19 @@ async function createCollections() {
     .toArray()
     .then((collections) => collections.some((c) => c.name === collectionName[0]));
 
-  const doesCollectionExistForScores = await db
-    .listCollections()
-    .toArray()
-    .then((collections)=>collections.some((c)=>c.name === collectionName[1] ));
-    const schema = {
-       name : String ,
-       email : String ,
-       cegain : Boolean ,
-       isVerfied : Boolean ,
-       otp : Number ,
-       validTill : Date , 
-       bought_passes : Array
+  const schema = {
+    name: String,
+    email: String,
+    cegian: Boolean,
+    isVerfied: Boolean,
+    otp: Number,
+    validTill: Date,
+    bought_passes: Array,
+    password: String,
+  };
+  const option = { validator: { $jsonSchema: schema } };
 
-    };
-
-    const scoreSchema = {
-      name : String ,
-      email : String ,
-      password: String,
-      matches_played: Number,
-      Matches_won: Number,
-      score: Number
-    }
-    const option = { validator: { $jsonSchema: schema } };
-    const scoreOption = {validator : {$jsonSchema : schema}};
-
-    console.log(doesCollectionExist)
-    console.log(doesCollectionExistForScores)
+  console.log(doesCollectionExist);
 
   if (!doesCollectionExist) {
     await db.createCollection(collectionName[0], option);
@@ -92,42 +78,7 @@ async function createCollections() {
   }
 }
 
-async function deleteCollection(collectionName) {
-  try {
-    // Access the database
-    const db = (await clientPromise).db("itrix");
-    
-    // Drop the collection
-    await db.collection(collectionName).drop();
-    
-    console.log(`Collection '${collectionName}' deleted successfully.`);
-  } catch (error) {
-    console.error(`Error deleting collection '${collectionName}':`, error);
-  }
-}
-async function listCollections() {
-  try {
-    // Access the database
-    const db = (await clientPromise).db("itrix");
-    
-    // List all collections
-    const collections = await db.listCollections().toArray();
-    
-    // Extract collection names
-    const collectionNames = collections.map(collection => collection.name);
-    
-    console.log("Existing collections:");
-    console.log(collectionNames);
-  } catch (error) {
-    console.error("Error listing collections:", error);
-  }
-}
-
-// Call the function to create collections
-createCollections().then(() => {
-  // After collections are created, list them
-  listCollections();
-});
+createCollections();
 
 // Export a module-scoped MongoClient promise.
 // By doing this in a separate module,

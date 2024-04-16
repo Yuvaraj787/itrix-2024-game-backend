@@ -1,8 +1,12 @@
 import { createTransport } from "nodemailer";
-import { sign, verify } from "jsonwebtoken";
 import { google } from "googleapis";
 import clientPromise from "./mongodb";
-import { sendMail } from "./utils";
+import {
+  sendMail,
+  comparePassword,
+  hashPassword,
+  generateToken,
+} from "./utils";
 
 const transport = createTransport({
   host: process.env.SMTP_SERVER,
@@ -15,21 +19,12 @@ const transport = createTransport({
 });
 
 /*
-   user Schema : 
-   name,
-   email,
-   isVerified ,
-   isCegian ,
-   otp ,
-   validTill ,
-   bought_passes 
+  Description : Create new User 
+  Method : POST 
+  data : { name  ,email , password }
 */
-// create new User
-
 export async function signUp(data: any) {
-  const { name, email, isCegian } = data;
-
-  // need to do validity checks
+  const { name, email, password } = data;
 
   const db = (await clientPromise).db("itrix");
 
@@ -47,6 +42,8 @@ export async function signUp(data: any) {
     };
   }
 
+  const hashedPassword = await hashPassword(password);
+
   const otp = Math.floor(100000 + Math.random() * 900000);
 
   // send mail
@@ -54,17 +51,12 @@ export async function signUp(data: any) {
 
   timeNow.setSeconds(timeNow.getSeconds() + 120);
 
-  await sendMail(
-    "Auction Game - OTP",
-    email,
-    otp,
-    timeNow, new Date() 
-  );
+  await sendMail("Auction Game - OTP", email, otp, timeNow, new Date(), "");
 
   await users.insertOne({
     name,
     email,
-    isCegian,
+    password: hashedPassword,
     isVerified: false,
     otp,
     validTill: timeNow,
@@ -78,7 +70,11 @@ export async function signUp(data: any) {
   };
 }
 
-// verify Otp
+/*
+  Description : verify OTP  
+  Method : POST 
+  data : {email , otp }
+*/
 export async function verifyOtp(data: any) {
   const { email, otp } = data;
 
@@ -105,8 +101,6 @@ export async function verifyOtp(data: any) {
       data: {},
     };
   }
-
-  console.log(otp, Number(isUserExist.otp));
 
   if (Number(otp) === Number(isUserExist.otp)) {
     const validTime = new Date(isUserExist.validTill).getTime();
@@ -140,9 +134,12 @@ export async function verifyOtp(data: any) {
   };
 }
 
-// resend otp
-
-export async function resendOtp(data: any) {
+/*
+  Description : Resending OTP
+  Method : POST 
+  data : { email }
+*/
+export async function resendOtp(data: any, message: any) {
   const email = data.email;
 
   const db = (await clientPromise).db("itrix");
@@ -161,7 +158,7 @@ export async function resendOtp(data: any) {
     };
   }
 
-  if (user.isVerified) {
+  if (user.isVerified && message !== "OTP for Reseting password") {
     return {
       success: false,
       message: "User already verified",
@@ -176,7 +173,14 @@ export async function resendOtp(data: any) {
 
   timeNow.setSeconds(timeNow.getSeconds() + 120);
 
-  await sendMail("Auction Game - New OTP", email, otp, timeNow, new Date());
+  await sendMail(
+    "Auction Game - New OTP",
+    email,
+    otp,
+    timeNow,
+    new Date(),
+    message
+  );
 
   await users.updateOne(
     {
@@ -189,128 +193,130 @@ export async function resendOtp(data: any) {
 
   return {
     success: true,
-    message: "Check Mail Again",
+    message: "Check Mail",
     data: {},
   };
 }
 
-export async function generateEmailToken(emailId: string) {
-  return generateToken(emailId, "10m");
-}
+/*
+  Description : Login and sets JWT Token 
+  Method : POST 
+  data : { email , password }
+*/
 
-export async function generateCookieToken(emailId: string) {
-  return generateToken(emailId, "30d");
-}
+export async function login(data: any) {
+  const { email, password } = data;
 
-export async function generateToken(emailId: string, expiresIn: string) {
-  return sign(
-    {
-      email: emailId,
-    },
-    process.env.SECRET_KEY || "key123",
-    { expiresIn: expiresIn }
-  );
-}
+  const db = (await clientPromise).db("itrix");
 
-export async function verifyToken(token: string): Promise<string | null> {
-  return new Promise((resolve, reject) => {
-    try {
-      let load = verify(token, process.env.SECRET_KEY || "key123");
-      //@ts-ignore
-      if (
-        load != undefined &&
-        //@ts-ignore
-        load.email != undefined &&
-        //@ts-ignore
-        load.email != null &&
-        //@ts-ignore
-        load.email != ""
-      ) {
-        //@ts-ignore
-        return resolve(load.email || "");
-      }
-      return reject(null);
-    } catch (e) {
-      console.log(e);
-      //@ts-ignore
-      return reject(null);
-    }
+  const users = db.collection("users");
+
+  const isUserExist = await users.findOne({
+    email,
   });
-}
 
-export async function verifyEmailTokenInServer(
-  token: string
-): Promise<{ msg: string; error?: string }> {
-  try {
-    const email = await verifyToken(token);
-    if (email == null) {
-      return { msg: "Email is not verified" };
-    }
-
-    const cookieToken = await generateCookieToken(email);
-
-    const db = (await clientPromise).db("itrix");
-    const collectionExists = await db
-      .listCollections({ name: "users" })
-      .hasNext();
-
-    const users = db.collection("users");
-
-    await users.updateOne(
-      { email: email },
-      { $set: { email: email } },
-      { upsert: true }
-    );
-
-    const doc = await users.findOne({ email: email });
-    if (doc?.verified == undefined) {
-      await users.updateOne(
-        { email: email },
-        { $set: { verified: true, bought_passes: [], cegian: false } },
-        { upsert: true }
-      );
-    }
-
-    return { msg: cookieToken };
-  } catch (e: any) {
-    console.log("Error in verifying email token " + e.message);
-    return { msg: "", error: "Token Error" };
+  if (!isUserExist) {
+    return {
+      success: false,
+      message: "Account not found, Please Signup",
+      data: {},
+    };
   }
+
+  if (isUserExist.isVerified === false) {
+    return {
+      success: false,
+      message: "Account not Verified, Visit Signup Page",
+      data: {},
+    };
+  }
+
+  const isSame = await comparePassword(password, isUserExist.password);
+
+  if (isSame) {
+    const jwtToken = await generateToken(
+      {
+        email: email,
+        name: isUserExist.name,
+      },
+      "30d"
+    );
+    // create JWT Token
+
+    return {
+      success: true,
+      message: "Login Success",
+      data: {
+        jwtToken,
+      },
+    };
+  }
+
+  return {
+    success: false,
+    message: "Incorrect Password",
+    data: {},
+  };
 }
 
-export async function sendVerificationLink(email: string): Promise<string> {
-  const token = await generateEmailToken(email);
-  console.log(token);
-  return new Promise((resolve, reject) => {
-    transport.sendMail(
-      {
-        from: "admin@istaceg.in",
-        to: email,
-        subject: "Email Alert",
-        html: `
-          <div>
-          
-          <p>Click this Link to verify login to this account 
-          <a href="http://${process.env.CURRENT_SERVER_IP}/auth/verify?token=${token}" target="_blank">
-            http://${process.env.CURRENT_SERVER_IP}/auth/verify?token=${token}
-          </a> 
-          to verify your account</p>
-          
-          </div>
-        `,
-      },
-      (error, info) => {
-        console.log("Error hi ", error);
-        if (error != null) {
-          return reject(error?.message);
-        }
-        console.log(error, info);
-        console.log("I am happening");
-        if (info.accepted) return resolve("");
-        else return resolve(info.response);
-      }
-    );
+// need to do forgot password
+export async function verifyResetPassword(data: any) {
+  const { email, password, otp } = data;
+
+  const db = (await clientPromise).db("itrix");
+
+  const users = db.collection("users");
+
+  const isUserExist = await users.findOne({
+    email,
   });
+
+  if (!isUserExist) {
+    return {
+      success: false,
+      message: "Account not found, Please Signup",
+      data: {},
+    };
+  }
+
+  if (!isUserExist.isVerified) {
+    return {
+      success: false,
+      message: "Account is not Verified yet",
+      data: {},
+    };
+  }
+  const validTime = new Date(isUserExist.validTill).getTime();
+
+  const currentTime = new Date().getTime();
+
+  if (otp == -1 || isUserExist.otp != otp || currentTime > validTime) {
+    return {
+      success: false,
+      message: "OTP is not valid",
+      data: {},
+    };
+  }
+
+  const hashedPassword = await hashPassword(password);
+
+  await users.updateOne(
+    {
+      email,
+    },
+    {
+      $set: {
+        otp: -1,
+        password: hashedPassword,
+      },
+    }
+  );
+
+  return {
+    success: true,
+    message: "Password has been reseted",
+    data: {},
+  };
 }
 
 const oauth2Client = new google.auth.OAuth2(
