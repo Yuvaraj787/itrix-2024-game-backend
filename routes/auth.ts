@@ -7,7 +7,15 @@ import {
   verifyResetPassword,
 } from "../action";
 import { googleRecaptcha, rateLimiting, verifyToken } from "../utils";
-import { loginValidator } from "../validators";
+import {
+  baseValidator,
+  loginValidator,
+  otpValidator,
+  resendOtpValidator,
+  signupValidator,
+  verifyResetPasswordValidator,
+} from "../validators";
+// import { loginValidator } from "../validators";
 
 const router = Router();
 
@@ -23,6 +31,8 @@ router.use((req: any, res: any, next: any) => {
 router.post(
   "/login",
   loginValidator,
+  baseValidator,
+
   googleRecaptcha,
   async (req: any, res: any) => {
     try {
@@ -35,37 +45,55 @@ router.post(
   }
 );
 
-router.post("/signup", googleRecaptcha, async (req: any, res: any) => {
-  try {
-    const data = await signUp(req.body);
-    res.json(data);
-  } catch (err) {
-    console.log("ERROR: " + err.message);
-    res.json({ success: false, message: "Error", data: {} });
+router.post(
+  "/signup",
+  signupValidator,
+  baseValidator,
+  googleRecaptcha,
+  async (req: any, res: any) => {
+    try {
+      const data = await signUp(req.body);
+      res.json(data);
+    } catch (err) {
+      console.log("ERROR: " + err.message);
+      res.json({ success: false, message: "Error", data: {} });
+    }
   }
-});
+);
 
-router.post("/verifyOtp", googleRecaptcha, async (req: any, res: any) => {
-  try {
-    console.log("request came", req.query);
-    const data = await verifyOtp(req.body);
-    res.json(data);
-  } catch (err) {
-    console.log("ERROR: " + err.message);
-    res.json({ success: false, message: "Error", data: {} });
+router.post(
+  "/verifyOtp",
+  otpValidator,
+  baseValidator,
+  googleRecaptcha,
+  async (req: any, res: any) => {
+    try {
+      console.log("request came", req.query);
+      const data = await verifyOtp(req.body);
+      res.json(data);
+    } catch (err) {
+      console.log("ERROR: " + err.message);
+      res.json({ success: false, message: "Error", data: {} });
+    }
   }
-});
+);
 
-router.post("/resendOtp", googleRecaptcha, async (req: any, res: any) => {
-  try {
-    console.log("request came", req.query);
-    const data = await resendOtp(req.body, "Resending OTP");
-    res.json(data);
-  } catch (err) {
-    console.log("ERROR: " + err.message);
-    res.json({ success: false, message: "Error", data: {} });
+router.post(
+  "/resendOtp",
+  resendOtpValidator,
+  baseValidator,
+  googleRecaptcha,
+  async (req: any, res: any) => {
+    try {
+      console.log("request came", req.query);
+      const data = await resendOtp(req.body, "Resending OTP");
+      res.json(data);
+    } catch (err) {
+      console.log("ERROR: " + err.message);
+      res.json({ success: false, message: "Error", data: {} });
+    }
   }
-});
+);
 
 export const middleware = (req: any, res: any, next: any) => {
   const token = req.headers["authorization"];
@@ -74,7 +102,7 @@ export const middleware = (req: any, res: any, next: any) => {
     const jwt = token.split(" ")[1];
     verifyToken(jwt)
       .then((msg) => {
-        // decoded jwt token will be stored here !! 
+        // decoded jwt token will be stored here !!
         req.data = msg;
         next();
       })
@@ -92,6 +120,8 @@ export const middleware = (req: any, res: any, next: any) => {
 
 router.post(
   "/resetPasswordOtp",
+  resendOtpValidator,
+  baseValidator,
   googleRecaptcha,
   async (req: any, res: any) => {
     try {
@@ -106,6 +136,8 @@ router.post(
 
 router.post(
   "/verifyResetPassword",
+  verifyResetPasswordValidator,
+  baseValidator,
   googleRecaptcha,
   async (req: any, res: any) => {
     try {
