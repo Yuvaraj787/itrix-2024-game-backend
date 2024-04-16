@@ -41,7 +41,7 @@ const clientPromise = Singleton.instance;
 async function createCollections() {
   // Your asynchronous code here
   const db = (await clientPromise).db("itrix");
-  const collectionName = ["users","scores"];
+  const collectionName = ["users"];
   
 
   const doesCollectionExist = await db
@@ -58,6 +58,7 @@ async function createCollections() {
     validTill: Date,
     bought_passes: Array,
     password: String,
+    
   };
   const option = { validator: { $jsonSchema: schema } };
 
@@ -70,12 +71,6 @@ async function createCollections() {
     console.log(`Collection '${collectionName[0]}' already exists.`);
   }
 
-  if(!doesCollectionExistForScores){
-    await db.createCollection(collectionName[1], scoreOption);
-    console.log(`Collection '${collectionName[1]}' created with schema!`);
-  } else {
-    console.log(`Collection '${collectionName[1]}' already exists.`);
-  }
 }
 
 createCollections();

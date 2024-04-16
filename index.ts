@@ -10,7 +10,6 @@ import axios from "axios"
 // import AuthRoutes from "./routes/auth"
 import ScoreManagement from "./routes/scores_management"
 import cookieParser from "cookie-parser"
-import bodyParser from "body-parser"
 import mongoose from "mongoose";
 import { Mutex } from "async-mutex";
 
