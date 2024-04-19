@@ -11,7 +11,7 @@ function updateUserPoints(users) {
     const promises = users.map(user => {
       console.log("inside promise");
       console.log(user);
-      return db.collection("scores").updateOne(
+      return db.collection("users").updateOne(
         { username: user.username }, 
         {
           $inc: { score: user.score, matches_played: 1 }, 

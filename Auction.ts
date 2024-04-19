@@ -26,12 +26,13 @@ async function run(gameData) {
   console.log(formated)
   let len = Object.keys(formated).length
   formated = JSON.stringify(formated)
-  const prompt = formated + ". Analyse these data which is collected during mock ipl auction and give the score (1-10) to the each user who picked best players and balanced team and rank (from 1 to " + len + " ) them in ascending order. format them by username, batting_score, bowling_score, overall_score, rank (respect to overall score),justification for points and array of players name picked by the corressponding user  in js object(format = [username: {rank: int, bowling_score : float, batting_score : float, justification: string, players: Array(string)}, ...]). no other thing required just give only js object. consider batting, bowling, wicket-keeping and allrounder equally (Consider all  T20 stats of these players and give fair points). start with { end with }.strictly no other things  "
+  const prompt = formated + ". Analyse these data which is collected during mock ipl auction and give the score (1-10) to the each user who picked best players and balanced team and rank (from 1 to " + len + " ) them in ascending order. format them by username, batting_score, bowling_score, overall_score, rank (respect to overall score),justification for points and array of players name picked by the corressponding user  in js object(format = [username: {rank: int, bowling_score : float, batting_score : float, justification: string, players: Array(string)}, ...]). no other thing required just give only js object. consider batting, bowling, wicket-keeping and allrounder equally (Consider all  T20 stats of these players and give fair points). start with { end with }.strictly no other things. provide only valid js object"
   const result = await model.generateContent(prompt);
   const response = await result.response;
   const text = response.text();
   var obj = JSON.parse(text)
-  console.log(obj)
+  console.log("GEmini provided results")
+  console.log(text, obj)
   return obj
 } catch(Err) {
     console.log("Errors occured : " + Err.message)
@@ -151,15 +152,6 @@ class AuctionRoom {
                         this.io.to(this.roomid).emit("sold", [this.last_bid,this.sold_players, this.users])
                     }
                     // setTimeout(() => {}, 1000)
-                    if (this.isGameOver()) {
-                        console.log(this.sold_players)
-                        this.io.to(this.roomid).emit("game-over","game-over")
-                        var scoresData = await run(this.sold_players);
-                        this.io.to(this.roomid).emit("scores", scoresData)
-                        updateToDB(scoresData);
-                        return;
-                    }
-
                     this.typeOfTimer = "waiting timer"
                     this.counter = this.waitingTime;
 

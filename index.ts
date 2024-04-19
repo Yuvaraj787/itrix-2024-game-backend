@@ -134,7 +134,7 @@ function removeUserfromRoom(roomid, username) {
 
 
 io.on("connection", (socket) => {
-  var userName = socket.handshake.query.name;
+  var userName = socket.handshake.query.token;
   var roomid = socket.handshake.query.room_id || "default_room";
 
     console.log("User connected : ", userName , " request to join ", roomid)

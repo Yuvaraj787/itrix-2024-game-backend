@@ -248,6 +248,7 @@ export async function login(data: any) {
       message: "Login Success",
       data: {
         jwtToken,
+        userName: isUserExist.name
       },
     };
   }
