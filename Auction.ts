@@ -1,6 +1,7 @@
 import playersData from "./playersData.json"
 import countriesData from "./countries.json"
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { verifyToken } from "./utils";
 import { Timestamp } from "mongodb";
 import { updateUserPoints } from "./routes/scores_management";
 
@@ -12,28 +13,57 @@ async function run(gameData) {
   const model = genAI.getGenerativeModel({ model: "gemini-pro"});
 
   var n = gameData.length;
-  var formated = {}
+  var formObj = {}
   for (var i = 0; i < n; i++) {
-    if (formated[gameData[i].username]) {
-      formated[gameData[i].username].push({
+    if (formObj[gameData[i].username]) {
+      formObj[gameData[i].username].push({
         player_name : gameData[i].player.fullname
       })
     } else {
-      formated[gameData[i].username] = [];
+      formObj[gameData[i].username] = [];
       i--;
     }
+}
+
+var len = Object.keys(formObj).length
+var users = Object.keys(formObj)
+var missing = {
+
+}
+
+for (let i = 0; i < len; i++) {
+  missing[users[i]] = {
+    batting_score: -1,
+    bowling_score: -1,
+    overall_score: -1,
+    players: formObj[users[i]].map(e => e.player_name),
+    justication: "-"
   }
-  console.log(formated)
-  let len = Object.keys(formated).length
-  formated = JSON.stringify(formated)
-  const prompt = formated + ". Analyse these data which is collected during mock ipl auction and give the score (1-10) to the each user who picked best players and balanced team and rank (from 1 to " + len + " ) them in ascending order. format them by username, batting_score, bowling_score, overall_score, rank (respect to overall score),justification for points and array of players name picked by the corressponding user  in js object(format = [username: {rank: int, bowling_score : float, batting_score : float, justification: string, players: Array(string)}, ...]). no other thing required just give only js object. consider batting, bowling, wicket-keeping and allrounder equally (Consider all  T20 stats of these players and give fair points). start with { end with }.strictly no other things. provide only valid js object"
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  const text = response.text();
-  var obj = JSON.parse(text)
-  console.log("GEmini provided results")
-  console.log(text, obj)
-  return obj
+}
+
+var missing_str = JSON.stringify(missing)
+console.log(missing_str)
+const prompt = missing_str + ". These data contains information of various users and their respective cricket team players. now fill the batting_score, bowling_score, overall_score, rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points (0-10) for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields and just give the js stringified object (I parse your response with JSON.parse() so give response parse() doesnt throw any errors)"
+
+
+const result = await model.generateContent(prompt);
+const response = await result.response;
+const text = response.text();
+var obj = JSON.parse(text)
+console.log("Gemini provided results")
+const resArr = []
+for (let i = 0; i < len; i++) {
+  let us = users[i];
+  resArr.push({
+    username: us,
+    players: missing[us].players,
+    ...obj[us]
+  })
+}
+resArr.sort((a,b) => b.overall_score - a.overall_score)
+resArr.forEach((e,i) => e.rank = i + 1)
+console.log(resArr)
+return JSON.stringify(resArr)
 } catch(Err) {
     console.log("Errors occured : " + Err.message)
     return {}
@@ -192,11 +222,11 @@ class AuctionRoom {
         }, 1000))
     }
 
-    reconnect(username, skt) {
+    reconnect(username, token, skt) {
         this.users[username].disconnected = false;
         let n = this.allSockets.length;
         for (let i = 0; i < n; i++) {
-            if (this.allSockets[i].handshake.query.name == username) {
+            if (this.allSockets[i].handshake.query.token == token) {
                 this.allSockets[i] = skt
                 return true
             }
@@ -208,6 +238,11 @@ class AuctionRoom {
         this.io.to(this.roomid).emit("start-bidding",[player, this.users])
         this.allSockets.forEach(eachSk => {
             eachSk.on("bid" + player.id, async (msg) => {
+                const verifiedName = verifyToken(msg.token);
+                if (msg.username != verifiedName) {
+                    console.log("something wrong")
+                }
+                
                 if (msg.player.currentPrice <= this.last_bid.player.currentPrice || this.users[msg.username].slotsLeft == 0) {
                     console.log("Not a valid bid")
                     return;

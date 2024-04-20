@@ -5,6 +5,7 @@ import http from "http";
 import cors from "cors";
 import AuctionRoom from "./Auction";
 import AuthRoutes, { middleware } from "./routes/auth";
+import { verifyToken } from "./utils";
 import bodyParser from "body-parser";
 import axios from "axios"
 // import AuthRoutes from "./routes/auth"
@@ -12,6 +13,7 @@ import ScoreManagement from "./routes/scores_management"
 import cookieParser from "cookie-parser"
 import mongoose from "mongoose";
 import { Mutex } from "async-mutex";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import conn from "./mongodb"
 
@@ -25,6 +27,76 @@ app.use(bodyParser.json());
 
 
 app.use("/auth", AuthRoutes);
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
+
+
+async function run() {
+  try {
+const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+
+var formObj = {
+  yuvarajv: [
+    { player_name: 'Marnus Labuschagne' }, 
+    { player_name: 'Ambati Rayudu' },      
+    { player_name: 'Aaron Finch' },        
+    { player_name: 'Adam Zampa' },
+    { player_name: 'Nathan Coulter-Nile' } 
+  ],
+  Raju: [
+    { player_name: 'Babar Azam' },
+    { player_name: 'Reeza Hendricks' },    
+    { player_name: 'Chris Lynn' },
+    { player_name: 'Shehan Jayasuriya' },  
+    { player_name: 'Kane Williamson' }     
+  ]
+}
+var len = Object.keys(formObj).length
+var users = Object.keys(formObj)
+var formated = JSON.stringify(formObj)
+var missing = {
+
+}
+
+for (let i = 0; i < len; i++) {
+  missing[users[i]] = {
+    batting_score: -1,
+    bowling_score: -1,
+    overall_score: -1,
+    players: formObj[users[i]].map(e => e.player_name),
+    justification: "-"
+  }
+}
+
+missing = JSON.stringify(missing)
+console.log(missing)
+const prompt = missing + ". These data contains information of various users and their respective cricket team players. now fill the batting_score, bowling_score, overall_score, rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points (0-10) for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields and just give the js stringified object (I parse your response with JSON.parse() so give response parse() doesnt throw any errors)"
+
+
+const result = await model.generateContent(prompt);
+const response = await result.response;
+const text = response.text();
+var obj = JSON.parse(text)
+console.log("Gemini provided results")
+const resObj = []
+for (let i = 0; i < len; i++) {
+  let us = users[i];
+  resObj.push({
+    username: us,
+    ...obj[us]
+  })
+}
+resObj.sort((a,b) => b.overall_score - a.overall_score)
+resObj.forEach((e,i) => e.rank = i + 1)
+console.log(resObj)
+return obj
+} catch(Err) {
+  console.log("Errors occured : " + Err.message)
+  return {}
+}
+}
+
+// run()
 
 // this is Protected Route
 app.get("/profile", middleware, (req: any, res: any) => {
@@ -133,23 +205,29 @@ function removeUserfromRoom(roomid, username) {
 }
 
 
-io.on("connection", (socket) => {
-  var userName = socket.handshake.query.token;
+io.on("connection", async (socket) => {
+  var token = socket.handshake.query.token;
+
+  var userObj = await verifyToken(token);
+  var userName = userObj.name
+  console.log(userName)
+
   var roomid = socket.handshake.query.room_id || "default_room";
 
     console.log("User connected : ", userName , " request to join ", roomid)
-
 
     if (checkifUserAlreadyJoined(roomid, userName)) {
       if (isRoomHasStarted(roomid)) {
           console.log("It seems user disconnected after the auction started. Trying to reconnect him....")
           let roomObj = getRoombj(roomid)
           socket.join(roomid)
-          if (roomObj.reconnect(userName, socket)) {
+          if (roomObj.reconnect(userName, token, socket)) {
             console.log("reconnection success")
             socket.emit("auction-started", () => console.log("Received by user"))
+          } else {
+            console.log("reconnection failed")
+            return;
           }
-          return;
       }
       return;
     } else {
