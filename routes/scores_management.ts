@@ -12,7 +12,7 @@ function updateUserPoints(users) {
       console.log("inside promise");
       console.log(user);
       return db.collection("users").updateOne(
-        { username: user.username }, 
+        { name: user.username }, 
         {
           $inc: { score: user.score, matches_played: 1 }, 
           $set: { last_updated: new Date() } 
@@ -20,9 +20,9 @@ function updateUserPoints(users) {
         { upsert: true } 
       ).then(() => {
         
-        if (user.rank === 1) {
-          return db.collection("scores").updateOne(
-            { username: user.username }, 
+        if (user.rank == 1) {
+          return db.collection("users").updateOne(
+            { name: user.username }, 
             { $inc: { matches_won: 1 } } 
           );
         }
@@ -57,31 +57,20 @@ function getCollectionDetails(collectionName) {
   });
 }
 
-router.put("/", (req, res) => {
-  const users = req.body;
- 
-
-  updateUserPoints(users).then(result => {
-    res.json(result);
-  }).catch(error => {
-    res.status(500).json({ success: false, error: error.message });
-  });
-});
-
 router.get("/", async (req, res) => {
     try {
       const client = await clientPromise;
       const db = client.db("itrix");
       
-      const users = await db.collection("scores")
+      const users = await db.collection("users")
                             .find({})
                             .sort({ score: -1 }) 
                             .toArray();
   
       const response = users.map(user => {
         return {
-          username: user.username,
-          points: user.score,
+          username: user.name,
+          scores: user.score,
           matches_played: user.matches_played,
           matches_won: user.matches_won
         };

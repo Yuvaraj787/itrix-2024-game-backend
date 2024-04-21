@@ -27,64 +27,65 @@ app.use(bodyParser.json());
 
 
 app.use("/auth", AuthRoutes);
+app.use("/scores", ScoreManagement);
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
 
 async function run() {
   try {
-const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+    const model = genAI.getGenerativeModel({ model: "gemini-pro"});
 
-var formObj = {
-  yuvarajv: [
-    { player_name: 'Marnus Labuschagne' }, 
-    { player_name: 'Ambati Rayudu' },      
-    { player_name: 'Aaron Finch' },        
-    { player_name: 'Adam Zampa' },
-    { player_name: 'Nathan Coulter-Nile' } 
-  ],
-  Raju: [
-    { player_name: 'Babar Azam' },
-    { player_name: 'Reeza Hendricks' },    
-    { player_name: 'Chris Lynn' },
-    { player_name: 'Shehan Jayasuriya' },  
-    { player_name: 'Kane Williamson' }     
-  ]
-}
-var len = Object.keys(formObj).length
-var users = Object.keys(formObj)
-var formated = JSON.stringify(formObj)
-var missing = {
+    var formObj = {
+      yuvarajv: [
+        { player_name: 'Marnus Labuschagne' }, 
+        { player_name: 'Ambati Rayudu' },      
+        { player_name: 'Aaron Finch' },        
+        { player_name: 'Adam Zampa' },
+        { player_name: 'Nathan Coulter-Nile' } 
+      ],
+      Raju: [
+        { player_name: 'Babar Azam' },
+        { player_name: 'Reeza Hendricks' },    
+        { player_name: 'Chris Lynn' },
+        { player_name: 'Shehan Jayasuriya' },  
+        { player_name: 'Kane Williamson' }     
+      ]
+    }
+    var len = Object.keys(formObj).length
+    var users = Object.keys(formObj)
+    var formated = JSON.stringify(formObj)
+    var missing = {
+    
+    }
 
-}
+    for (let i = 0; i < len; i++) {
+      missing[users[i]] = {
+        batting_score: -1,
+        bowling_score: -1,
+        overall_score: -1,
+        players: formObj[users[i]].map(e => e.player_name),
+        justification: "-"
+      }
+    }
 
-for (let i = 0; i < len; i++) {
-  missing[users[i]] = {
-    batting_score: -1,
-    bowling_score: -1,
-    overall_score: -1,
-    players: formObj[users[i]].map(e => e.player_name),
-    justification: "-"
-  }
-}
-
-missing = JSON.stringify(missing)
-console.log(missing)
-const prompt = missing + ". These data contains information of various users and their respective cricket team players. now fill the batting_score, bowling_score, overall_score, rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points (0-10) for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields and just give the js stringified object (I parse your response with JSON.parse() so give response parse() doesnt throw any errors)"
+    missing = JSON.stringify(missing)
+    console.log(missing)
+    const prompt = missing + ". These data contains information of various users and their respective cricket team players. now fill the batting_score, bowling_score, overall_score, rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points (0-10) for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields and just give the js stringified object (I parse your response with JSON.parse() so give response parse() doesnt throw any errors)"
 
 
-const result = await model.generateContent(prompt);
-const response = await result.response;
-const text = response.text();
-var obj = JSON.parse(text)
-console.log("Gemini provided results")
-const resObj = []
-for (let i = 0; i < len; i++) {
-  let us = users[i];
-  resObj.push({
-    username: us,
-    ...obj[us]
-  })
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    var obj = JSON.parse(text)
+    console.log("Gemini provided results")
+    const resObj = []
+    for (let i = 0; i < len; i++) {
+      let us = users[i];
+      resObj.push({
+        username: us,
+        ...obj[us]
+      })
 }
 resObj.sort((a,b) => b.overall_score - a.overall_score)
 resObj.forEach((e,i) => e.rank = i + 1)
@@ -106,6 +107,19 @@ app.get("/profile", middleware, (req: any, res: any) => {
   });
 });
 
+app.post("/roomExist", middleware, (req, res) => {
+  console.log("received", req.query)
+  res.json({
+    exist: checkIfRoomExist(req.query.room_id)
+  })
+})
+
+app.get("/suggestRooms", middleware, (req, res) => {
+  console.log("suggest rooms request received")
+  let active_rooms = rooms.filter(rm => rm.status == "Not Started")
+  res.json(active_rooms);
+})
+
 const io = new Server(server, {
   connectionStateRecovery: {},
   cors: {
@@ -114,14 +128,23 @@ const io = new Server(server, {
   },
 });
 
-const rooms = [];
+var rooms = [];
 
+function checkIfRoomExist(room_id) {
+  var fil =  rooms.filter(rm => rm.roomid == room_id)
+  if (fil.length > 0) return true
+  return false
+}
 
 function addRooms(room_id) {
   var duplicate = false;
-  if (!rooms.includes(room_id)) {
+  if (!checkIfRoomExist(room_id)) {
     rooms.push({ roomid: room_id, members: [] });
   }
+}
+
+function deleteRoom(room_id) {
+  rooms = rooms.filter(rm => rm.roomid != room_id)
 }
 
 function checkifUserAlreadyJoined(roomid, username) {
@@ -147,10 +170,10 @@ function addMemberToGroup(roomid, username) {
 
   if (!found) {
     rooms.push({
-      roomid,members:[username], status: "Not Started", roomObj: null
+      roomid,members:[username], status: "Not Started", roomObj: null, host: username
     })
-
   }
+
   console.log(rooms);
 }
 
@@ -204,6 +227,42 @@ function removeUserfromRoom(roomid, username) {
   })
 }
 
+function deleteEmptyRooms() {
+  rooms = rooms.filter(rm => rm.members.length > 0)
+  console.log("Empty rooms deleted")
+  console.log(rooms)
+}
+
+function isUserHost(roomid, username) {
+  let room = rooms.find(e => e.roomid == roomid)
+  console.log("user host status : ", room.host == username)
+  return room.host == username
+}
+
+function isRoomEmpty(roomid) {
+  let room = rooms.find(e => e.roomid == roomid)
+  console.log("room length : ", room.members.length)
+  return room.members.length == 0;
+}
+
+function isUserPresent(roomid, user) {
+  let room = rooms.find(e => e.roomid == roomid)
+  return room.members.includes(user)
+}
+
+function getHostName(roomid) {
+  let room =  rooms.find(e => e.roomid == roomid)
+  return room.host;
+}
+
+function changeHost(roomid, host) {
+  rooms.forEach(room => {
+    if (room.roomid == roomid) {
+      room.host = host
+    }
+  })
+}
+
 
 io.on("connection", async (socket) => {
   var token = socket.handshake.query.token;
@@ -240,7 +299,11 @@ io.on("connection", async (socket) => {
       return;
     }
 
-    socket.on("disconnect", () => {
+    socket.on("who-is-host", (callBack)=>{
+      callBack(getHostName(roomid))
+    })
+
+    socket.on("disconnect", async () => {
       if (isRoomHasStarted(roomid)) {
           console.log("Client disconnected after auction started")
           let roomObj = getRoombj(roomid)
@@ -249,8 +312,23 @@ io.on("connection", async (socket) => {
           console.log("Client disconnected before auction started");
           removeUserfromRoom(roomid, userName)
           console.log(rooms)
+        if (isUserHost(roomid, userName) && !isRoomEmpty(roomid)) {
+            console.log("host is disconnected")
+            let allSockets = await io.in(roomid).fetchSockets();
+            setTimeout(async ()=>{
+              if (!isUserPresent(roomid, userName)) {
+                let u_obj = await verifyToken(allSockets[0].handshake.query.token);
+                let u_name = u_obj.name
+                changeHost(roomid, u_name)
+                allSockets[0].emit("accept-host", u_name);
+                console.log(rooms.find(e => e.roomid == roomid))
+              }
+            }, 1000)
+          }
           io.to(roomid).emit("users_added", getUsers(roomid))
+
       }
+      deleteEmptyRooms()
     })
 
     socket.join(roomid)
@@ -283,5 +361,5 @@ io.on("connection", async (socket) => {
     })
 
 })
-
+export {deleteRoom}
 server.listen(port, () => console.log("Server is listening at PORT :", port));

@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { verifyToken } from "./utils";
 import { Timestamp } from "mongodb";
 import { updateUserPoints } from "./routes/scores_management";
+import { deleteRoom } from "./index";
 
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
@@ -43,7 +44,7 @@ for (let i = 0; i < len; i++) {
 
 var missing_str = JSON.stringify(missing)
 console.log(missing_str)
-const prompt = missing_str + ". These data contains information of various users and their respective cricket team players. now fill the batting_score, bowling_score, overall_score, rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points (0-10) for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields and just give the js stringified object (I parse your response with JSON.parse() so give response parse() doesnt throw any errors)"
+const prompt = missing_str + ". These data contains information of various users and their respective cricket team players. now fill the batting_score (0 - 10), bowling_score(0 - 10), overall_score(0 - 10), rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields and just give the js stringified object (I parse your response with JSON.parse() so give response parse() doesnt throw any errors)"
 
 
 const result = await model.generateContent(prompt);
@@ -55,15 +56,15 @@ const resArr = []
 for (let i = 0; i < len; i++) {
   let us = users[i];
   resArr.push({
+    ...obj[us],
     username: us,
     players: missing[us].players,
-    ...obj[us]
   })
 }
 resArr.sort((a,b) => b.overall_score - a.overall_score)
 resArr.forEach((e,i) => e.rank = i + 1)
 console.log(resArr)
-return JSON.stringify(resArr)
+return resArr
 } catch(Err) {
     console.log("Errors occured : " + Err.message)
     return {}
@@ -116,8 +117,8 @@ class AuctionRoom {
         this.io = io
         this.roomid = roomid
         this.socket = socket
-        this.biddingTime = 7;
-        this.waitingTime = 3;
+        this.biddingTime = 3;
+        this.waitingTime = 1;
         this.counter = this.biddingTime
         this.users = {}
         console.log(users)
@@ -172,6 +173,7 @@ class AuctionRoom {
         return new Promise(resolve => this.timerId = setInterval(async () => {
             if (this.counter == 0) {
                 if (this.typeOfTimer == "bidding timer") {
+                    this.io.off(str, () => {})
                     if (this.last_bid.player.currentPrice == 0) {
                         this.io.to(this.roomid).emit("unsold", this.last_bid)
                     } else {
@@ -187,7 +189,6 @@ class AuctionRoom {
 
                     this.io.to(this.roomid).emit("timeout","Times out for bidding")
 
-                    this.io.off(str, () => {})
                     return;
                 }
 
@@ -198,11 +199,18 @@ class AuctionRoom {
                 clearTimeout(this.timerId)
                 
                 if (this.isGameOver()) {
+                    deleteRoom(this.roomid)
                     console.log(this.sold_players)
                     this.io.to(this.roomid).emit("game-over","game-over")
                     var scoresData = await run(this.sold_players);
-                    this.io.to(this.roomid).emit("scores", scoresData)
-
+                    this.io.to(this.roomid).emit("scores", JSON.stringify(scoresData))
+                    var format = scoresData.map(e => {return {username: e.username, score:e.overall_score}})
+                    var result = updateUserPoints(format)
+                    if ((await result).success) {
+                        console.log("points updated successfully")
+                    } else {
+                        console.log("Error in updating points to db : ", result.error)
+                    }
                 } else {
                     var player = this.getRandomPlayer()
                     this.last_bid = {

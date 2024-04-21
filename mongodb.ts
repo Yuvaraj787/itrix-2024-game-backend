@@ -62,6 +62,7 @@ async function createCollections() {
     matches_won: Number,
     score: Number
   };
+  
   const option = { validator: { $jsonSchema: schema } };
 
   console.log(doesCollectionExist);

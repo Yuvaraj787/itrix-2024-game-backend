@@ -69,7 +69,7 @@ router.post("/resendOtp", googleRecaptcha, async (req: any, res: any) => {
 
 export const middleware = (req: any, res: any, next: any) => {
   const token = req.headers["authorization"];
-
+  console.log("Middle ware triggered ", token)
   if (typeof token !== "undefined") {
     const jwt = token.split(" ")[1];
     verifyToken(jwt)
@@ -79,6 +79,7 @@ export const middleware = (req: any, res: any, next: any) => {
         next();
       })
       .catch((err) => {
+        console.log("error in token verification")
         res
           .status(498)
           .json({ success: false, message: "Invalid/Expired JWT", data: {} });
