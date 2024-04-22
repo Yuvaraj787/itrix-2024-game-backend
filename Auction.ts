@@ -117,8 +117,8 @@ class AuctionRoom {
         this.io = io
         this.roomid = roomid
         this.socket = socket
-        this.biddingTime = 3;
-        this.waitingTime = 1;
+        this.biddingTime = 7;
+        this.waitingTime = 2;
         this.counter = this.biddingTime
         this.users = {}
         console.log(users)
@@ -244,6 +244,7 @@ class AuctionRoom {
 
     async bidThisPlayer(player) {
         this.io.to(this.roomid).emit("start-bidding",[player, this.users])
+        let users = [];
         this.allSockets.forEach(eachSk => {
             eachSk.on("bid" + player.id, async (msg) => {
                 const verifiedName = verifyToken(msg.token);
@@ -267,6 +268,16 @@ class AuctionRoom {
                 console.log(`Current price for the player ${msg.player.fullname} is ${msg.player.currentPrice}`)  
                 this.typeOfTimer = "bidding timer"           
                 this.counter = this.biddingTime
+            })
+            eachSk.on("skip" + player.id, async (msg) => {
+                if (!users.includes(msg)) {
+                    users.push(msg)
+                    this.io.to(this.roomid).emit("skip", users.length)
+                }
+                this.io.to(this.roomid).emit("skip", users)
+                if (users.length == this.allSockets.length) {
+                    this.counter = 1;
+                }
             })
         })
         await this.manageTimeOut(player)

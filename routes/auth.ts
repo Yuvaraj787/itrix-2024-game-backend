@@ -23,10 +23,12 @@ router.use((req: any, res: any, next: any) => {
 router.post(
   "/login",
   loginValidator,
-  googleRecaptcha,
+  // googleRecaptcha,
   async (req: any, res: any) => {
+    console.log("received")
     try {
       const data = await login(req.body);
+      console.log(data)
       res.json(data);
     } catch (err) {
       console.log("ERROR: " + err.message);
@@ -68,27 +70,31 @@ router.post("/resendOtp", googleRecaptcha, async (req: any, res: any) => {
 });
 
 export const middleware = (req: any, res: any, next: any) => {
-  const token = req.headers["authorization"];
-  console.log("Middle ware triggered ", token)
-  if (typeof token !== "undefined") {
-    const jwt = token.split(" ")[1];
-    verifyToken(jwt)
-      .then((msg) => {
-        // decoded jwt token will be stored here !! 
-        req.data = msg;
-        next();
-      })
-      .catch((err) => {
-        console.log("error in token verification")
+  try {
+      const token = req.headers["authorization"];
+      console.log("Middle ware triggered ", token)
+      if (typeof token !== "undefined") {
+        const jwt = token.split(" ")[1];
+        verifyToken(jwt)
+          .then((msg) => {
+            // decoded jwt token will be stored here !! 
+            req.data = msg;
+            next();
+          })
+          .catch((err) => {
+            console.log("error in token verification")
+            res
+              .status(498)
+              .json({ success: false, message: "Invalid/Expired JWT", data: {} });
+          });
+      } else {
         res
           .status(498)
-          .json({ success: false, message: "Invalid/Expired JWT", data: {} });
-      });
-  } else {
-    res
-      .status(498)
-      .json({ success: false, message: "Token Not Found", data: {} });
-  }
+          .json({ success: false, message: "Token Not Found", data: {} });
+      }
+    } catch (err) {
+      res.json({success: false})
+    }
 };
 
 router.post(
