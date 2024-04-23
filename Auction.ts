@@ -209,7 +209,7 @@ class AuctionRoom {
                         this.io.to(this.roomid).emit("game-over", "game-over")
                         var scoresData = await run(this.sold_players);
                         this.io.to(this.roomid).emit("scores", JSON.stringify(scoresData))
-                        var format = scoresData.map(e => { return { username: e.username, score: e.overall_score } })
+                        var format = scoresData.map(e => { return { username: e.username, score: e.overall_score, rank: e.rank } })
                         var result = updateUserPoints(format)
                         if ((await result).success) {
                             console.log("points updated successfully")
