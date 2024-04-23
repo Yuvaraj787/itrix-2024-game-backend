@@ -377,5 +377,10 @@ io.on("connection", async (socket) => {
     console.log("Some errors in root socket connection : " + err.message)
   }
 })
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 export {deleteRoom}
 server.listen(port, () => console.log("Server is listening at PORT :", port));
