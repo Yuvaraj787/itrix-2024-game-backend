@@ -72,7 +72,7 @@ async function run(gameData) {
 }
 
 
-async function updateToDB(scores) {:
+async function updateToDB(scores) {
     try {
         let formateArray = [];
         Object.keys(scores).map(un => {
