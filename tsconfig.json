@@ -7,6 +7,8 @@
       "sourceMap": true,
       "outDir": "dist",
       "resolveJsonModule": true,
+      "noEmit": true,
+      "noEmitOnError":true,
     },
     "lib": ["es2015"],
     "ts-node": {

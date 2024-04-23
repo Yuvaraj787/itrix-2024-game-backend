@@ -2,8 +2,7 @@ import { MongoClient } from "mongodb";
 import { Collection } from "mongoose";
 
 // Replace with your MongoDB connection string
-const uri =
-  "mongodb+srv://user_purple:test123@gamedata.esztpbe.mongodb.net/?retryWrites=true&w=majority&appName=GameData" as string;
+const uri = process.env.DATABASE_URL
 
 const options = {};
 
