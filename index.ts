@@ -14,11 +14,12 @@ import cookieParser from "cookie-parser"
 import mongoose from "mongoose";
 import { Mutex } from "async-mutex";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import path from "path"
 
 import conn from "./mongodb"
 
 const app = express();
-const port = 3000;
+const port = 80;
 const server = http.createServer(app);
 
 app.use(express.static('public'))

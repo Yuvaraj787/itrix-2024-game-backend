@@ -49,7 +49,7 @@ export async function signUp(data: any) {
   // send mail
   const timeNow = new Date();
 
-  timeNow.setSeconds(timeNow.getSeconds() + 120);
+  timeNow.setSeconds(timeNow.getSeconds() + 1200);
 
   await sendMail("Auction Game - OTP", email, otp, timeNow, new Date(), "");
 

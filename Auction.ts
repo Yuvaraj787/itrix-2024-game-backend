@@ -44,7 +44,7 @@ async function run(gameData) {
 
         var missing_str = JSON.stringify(missing)
         console.log(missing_str)
-        const prompt = missing_str + ". These data contains information of various users and their respective cricket team players. now fill the batting_score (0 - 10), bowling_score(0 - 10), overall_score(0 - 10), rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields (instead of 0 and '-') and just give the js stringified object (I parse your response with JSON.parse() so give response such that parse() doesnt throw any errors)"
+        const prompt = missing_str + ". These data contains information of various users and their respective cricket team players. now fill the batting_score (0 - 10), bowling_score(0 - 10), overall_score(0 - 10), rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields (instead of 0 and '-' fill with scores. dont leave it with 0 and '-') and just give the js stringified object (I parse your response with JSON.parse() so give response such that parse() doesnt throw any errors)"
 
 
         const result = await model.generateContent(prompt);
@@ -204,6 +204,7 @@ class AuctionRoom {
                     clearTimeout(this.timerId)
 
                     if (this.isGameOver()) {
+			try {
                         deleteRoom(this.roomid)
                         console.log(this.sold_players)
                         this.io.to(this.roomid).emit("game-over", "game-over")
@@ -216,6 +217,9 @@ class AuctionRoom {
                         } else {
                             console.log("Error in updating points to db : ", result.error)
                         }
+			} catch (err1) {
+				console.log("error in gemini : " + err1.message);
+			}
                     } else {
                         var player = this.getRandomPlayer()
                         this.last_bid = {
