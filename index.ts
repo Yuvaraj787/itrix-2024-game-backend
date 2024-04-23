@@ -236,8 +236,8 @@ function deleteEmptyRooms() {
 
 function isUserHost(roomid, username) {
   let room = rooms.find(e => e.roomid == roomid)
-  console.log("user host status : ", room.host == username)
   if (room) {
+    console.log("user host status : ", room.host == username)
     return room.host == username
   }
   return false
