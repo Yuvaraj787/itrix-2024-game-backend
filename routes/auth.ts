@@ -120,29 +120,10 @@ export const middleware = (req: any, res: any, next: any) => {
           .status(498)
           .json({ success: false, message: "Token Not Found", data: {} });
       }
-    } catch (err) {
-      res.json({success: false})
-    }
-  const token = req.headers["authorization"];
-
-  if (typeof token !== "undefined") {
-    const jwt = token.split(" ")[1];
-    verifyToken(jwt)
-      .then((msg) => {
-        // decoded jwt token will be stored here !!
-        req.data = msg;
-        next();
-      })
-      .catch((err) => {
-        res
-          .status(498)
-          .json({ success: false, message: "Invalid/Expired JWT", data: {} });
-      });
-  } else {
-    res
-      .status(498)
-      .json({ success: false, message: "Token Not Found", data: {} });
-  }
+    
+} catch (err) {
+  res.json({success: false})
+}
 };
 
 router.post(
