@@ -34,17 +34,17 @@ var missing = {
 
 for (let i = 0; i < len; i++) {
   missing[users[i]] = {
-    batting_score: -1,
-    bowling_score: -1,
-    overall_score: -1,
+    batting_score: 0,
+    bowling_score: 0,
+    overall_score: 0,
     players: formObj[users[i]].map(e => e.player_name),
-    justication: "-"
+    justification: '-'
   }
 }
 
 var missing_str = JSON.stringify(missing)
 console.log(missing_str)
-const prompt = missing_str + ". These data contains information of various users and their respective cricket team players. now fill the batting_score (0 - 10), bowling_score(0 - 10), overall_score(0 - 10), rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields and just give the js stringified object (I parse your response with JSON.parse() so give response parse() doesnt throw any errors)"
+const prompt = missing_str + ". These data contains information of various users and their respective cricket team players. now fill the batting_score (0 - 10), bowling_score(0 - 10), overall_score(0 - 10), rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields (instead of 0 and '-') and just give the js stringified object (I parse your response with JSON.parse() so give response such that parse() doesnt throw any errors)"
 
 
 const result = await model.generateContent(prompt);

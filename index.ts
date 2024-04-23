@@ -237,23 +237,35 @@ function deleteEmptyRooms() {
 function isUserHost(roomid, username) {
   let room = rooms.find(e => e.roomid == roomid)
   console.log("user host status : ", room.host == username)
-  return room.host == username
+  if (room) {
+    return room.host == username
+  }
+  return false
 }
 
 function isRoomEmpty(roomid) {
   let room = rooms.find(e => e.roomid == roomid)
   console.log("room length : ", room.members.length)
-  return room.members.length == 0;
+  if (room) {
+      return room.members.length == 0;
+  } 
+  return true;
 }
 
 function isUserPresent(roomid, user) {
   let room = rooms.find(e => e.roomid == roomid)
-  return room.members.includes(user)
+  if (room) {
+      return room.members.includes(user)
+  }
+  return false
 }
 
 function getHostName(roomid) {
   let room =  rooms.find(e => e.roomid == roomid)
-  return room.host;
+  if (room) {
+      return room.host;
+  }
+  return "";
 }
 
 function changeHost(roomid, host) {
@@ -266,6 +278,7 @@ function changeHost(roomid, host) {
 
 
 io.on("connection", async (socket) => {
+  try {
   var token = socket.handshake.query.token;
 
   var userObj = await verifyToken(token);
@@ -360,7 +373,9 @@ io.on("connection", async (socket) => {
           })
       }, 2000)
     })
-
+  } catch (err) {
+    console.log("Some errors in root socket connection : " + err.message)
+  }
 })
 export {deleteRoom}
 server.listen(port, () => console.log("Server is listening at PORT :", port));
