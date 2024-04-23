@@ -117,8 +117,8 @@ class AuctionRoom {
         this.io = io
         this.roomid = roomid
         this.socket = socket
-        this.biddingTime = 2;
-        this.waitingTime = 1;
+        this.biddingTime = 7;
+        this.waitingTime = 3;
         this.counter = this.biddingTime
         this.users = {}
         console.log(users)
