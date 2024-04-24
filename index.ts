@@ -104,12 +104,6 @@ return obj
 // run()
 
 // this is Protected Route
-app.get("/profile", middleware, (req: any, res: any) => {
-  res.json({
-    name: "yuva",
-    age: 19,
-  });
-});
 
 app.post("/roomExist", middleware, (req, res) => {
   console.log("received", req.query)
@@ -221,7 +215,6 @@ function getUsers(roomid) {
   var needed_room = rooms.find((room) => room.roomid == roomid);
   return needed_room;
 }
-
 
 function removeUserfromRoom(roomid, username) {
   rooms.forEach(room => {
