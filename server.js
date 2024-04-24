@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const bcrypt = require('bcrypt');
 
 const PORT = 7000;
 const MONGOURL = "mongodb://localhost:27017/itrix";
@@ -83,6 +84,35 @@ async function updateFavoriteTeam(user2, favoriteTeam2) {
   }
 }
 
+async function updatePassword(user2, newPassword) {
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    await User.updateOne({ user: user2 }, { password: hashedPassword });
+    console.log("Password updated successfully");
+  } catch (error) {
+    console.error("Error updating password:", error);
+  }
+}
+
+app.post("/updatePassword", async (req, res) => {
+  const { user, oldPassword, newPassword } = req.body;
+ 
+  // First, check if the old password matches the current password
+  const userRecord = await User.findOne({ user: user });
+  if (!userRecord) {
+    return res.status(400).send({ message: "User not found" });
+  }
+ 
+  const validPassword = await bcrypt.compare(oldPassword, userRecord.password);
+  if (!validPassword) {
+    return res.status(400).send({ message: "Invalid old password" });
+  }
+ 
+  // If old password is correct, update the password
+  await updatePassword(user, newPassword);
+  res.sendStatus(200);
+});
 
 // Routes
 app.post("/api", async (req, res) => {
@@ -112,9 +142,51 @@ app.post("/updateGender",async (req,res)=>{
 
 app.post("/updateFavoriteTeam", async (req, res) => {
   const { user, favouriteTeam } = req.body;
-  await updateFavoriteTeam(user, favouriteTeam);
-  res.sendStatus(200);
+ 
+  try {
+    await User.updateOne({ user: user }, { favoriteTeam: favouriteTeam });
+    console.log("Favorite team updated successfully");
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("Error updating favorite team:", error);
+    res.status(500).send({ message: "Error updating favorite team" });
+  }
 });
+
+app.post("/create_matches_played", async(req, res) => {
+  const {user} = req.body;
+  const funct = (user2)=>{
+    try{
+      User.updateOne({ user: user2 }, { $set:{matches_played: 0 }});
+      res.sendStatus(200);
+    }catch(error){
+      console.log("Error to create matches played");
+    }
+    
+  }
+  funct(user);
+})
+
+app.post("/create_matches_won", async(req, res) => {
+  const {user} = req.body;
+  const funct = (user2)=>{
+    try{
+      User.updateOne({ user: user2 }, { $set:{matches_won: 0 }});
+      res.sendStatus(200);
+    }catch(error){
+      console.log("Error to create matches played");
+    }
+    
+  }
+  funct(user);
+})
+
+app.post("/checkpassword", async(req,res)=>{
+  const {username} = req.body;
+  const {password} = await User.find({user:username}).limit(1).exec();
+  res.json({checkpassword : password});
+})
+
 
 app.listen(PORT, () => {
   console.log("Server started on port 7000");
