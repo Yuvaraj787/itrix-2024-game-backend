@@ -59,7 +59,8 @@ async function createCollections() {
     password: String,
     matches_played: Number,
     matches_won: Number,
-    score: Number
+    score: Number,
+    favoriteTeam: String
   };
   
   const option = { validator: { $jsonSchema: schema } };

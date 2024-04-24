@@ -32,7 +32,6 @@ router.post(
   "/login",
   loginValidator,
   baseValidator,
-
   googleRecaptcha,
   async (req: any, res: any) => {
     console.log("received")
@@ -161,5 +160,4 @@ router.post(
 router.get("/verifyToken", middleware, (req, res) => {
   res.json({ success: true, message: "JWT Verified", data: req.data });
 });
-
 export default router;

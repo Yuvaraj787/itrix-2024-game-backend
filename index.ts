@@ -5,6 +5,7 @@ import http from "http";
 import cors from "cors";
 import AuctionRoom from "./Auction";
 import AuthRoutes, { middleware } from "./routes/auth";
+import ProfileRoutes from "./routes/profile"
 import { verifyToken } from "./utils";
 import bodyParser from "body-parser";
 import axios from "axios"
@@ -30,6 +31,7 @@ app.use(bodyParser.json());
 
 app.use("/auth", AuthRoutes);
 app.use("/scores", ScoreManagement);
+app.use("/profile", ProfileRoutes);
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 

@@ -34,10 +34,22 @@ export async function signUp(data: any) {
     email,
   });
 
+  const isUserNameExist = await users.findOne({
+    name,
+  });
+
   if (isUserExist) {
     return {
       success: false,
-      message: "User Already exists",
+      message: "User with this mail Already exists",
+      data: {},
+    };
+  }
+
+  if (isUserNameExist) {
+    return {
+      success: false,
+      message: "Username already taken. Choose a different one",
       data: {},
     };
   }
