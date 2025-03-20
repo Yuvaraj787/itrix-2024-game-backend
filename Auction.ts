@@ -11,8 +11,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
 async function run(gameData) {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         var n = gameData.length;
         var formObj = {}
         for (var i = 0; i < n; i++) {
@@ -51,7 +50,7 @@ async function run(gameData) {
         const response = await result.response;
         const text = response.text();
         var obj = JSON.parse(text)
-        console.log("Gemini provided results")
+        console.log("Gemini provided results", obj)
         const resArr = []
         for (let i = 0; i < len; i++) {
             let us = users[i];
@@ -71,6 +70,11 @@ async function run(gameData) {
     }
 }
 
+// var sampleGameData = { "Yuvi": { "batting_score": 0, "bowling_score": 0, "overall_score": 0, "players": ["Rohit Sharma", "Ravindra Jadeja", "Aaron Finch", "D'Arcy Short", "Shehan Jayasuriya"], "justification": "-" }, "Yuvi-dev-test": { "batting_score": 0, "bowling_score": 0, "overall_score": 0, "players": ["Shaun Marsh", "Usman Khawaja", "Alex Hales", "Prithvi Shaw", "Mohammad Nawaz"], "justification": "-" } }
+
+// (async () => {
+//     console.log(await run(sampleGameData));
+// })();
 
 async function updateToDB(scores) {
     try {
@@ -117,7 +121,7 @@ class AuctionRoom {
         this.io = io
         this.roomid = roomid
         this.socket = socket
-        this.biddingTime = 7;
+        this.biddingTime = 3;
         this.waitingTime = 3;
         this.counter = this.biddingTime
         this.users = {}
@@ -204,22 +208,22 @@ class AuctionRoom {
                     clearTimeout(this.timerId)
 
                     if (this.isGameOver()) {
-			try {
-                        deleteRoom(this.roomid)
-                        console.log(this.sold_players)
-                        this.io.to(this.roomid).emit("game-over", "game-over")
-                        var scoresData = await run(this.sold_players);
-                        this.io.to(this.roomid).emit("scores", JSON.stringify(scoresData))
-                        var format = scoresData.map(e => { return { username: e.username, score: e.overall_score, rank: e.rank } })
-                        var result = updateUserPoints(format)
-                        if ((await result).success) {
-                            console.log("points updated successfully")
-                        } else {
-                            console.log("Error in updating points to db : ", result.error)
+                        try {
+                            deleteRoom(this.roomid)
+                            console.log(this.sold_players)
+                            this.io.to(this.roomid).emit("game-over", "game-over")
+                            var scoresData = await run(this.sold_players);
+                            this.io.to(this.roomid).emit("scores", JSON.stringify(scoresData))
+                            var format = scoresData.map(e => { return { username: e.username, score: e.overall_score, rank: e.rank } })
+                            var result = updateUserPoints(format)
+                            if ((await result).success) {
+                                console.log("points updated successfully")
+                            } else {
+                                console.log("Error in updating points to db : ", result.error)
+                            }
+                        } catch (err1) {
+                            console.log("error in gemini : " + err1.message);
                         }
-			} catch (err1) {
-				console.log("error in gemini : " + err1.message);
-			}
                     } else {
                         var player = this.getRandomPlayer()
                         this.last_bid = {

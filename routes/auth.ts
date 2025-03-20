@@ -32,7 +32,7 @@ router.post(
   "/login",
   loginValidator,
   baseValidator,
-  googleRecaptcha,
+  // googleRecaptcha,
   async (req: any, res: any) => {
     console.log("received")
     try {
@@ -50,7 +50,7 @@ router.post(
   "/signup",
   signupValidator,
   baseValidator,
-  googleRecaptcha,
+  // googleRecaptcha,
   async (req: any, res: any) => {
     try {
       const data = await signUp(req.body);
@@ -66,7 +66,7 @@ router.post(
   "/verifyOtp",
   otpValidator,
   baseValidator,
-  googleRecaptcha,
+  // googleRecaptcha,
   async (req: any, res: any) => {
     try {
       console.log("request came", req.query);
@@ -83,7 +83,7 @@ router.post(
   "/resendOtp",
   resendOtpValidator,
   baseValidator,
-  googleRecaptcha,
+  // googleRecaptcha,
   async (req: any, res: any) => {
     try {
       console.log("request came", req.query);
@@ -129,7 +129,7 @@ router.post(
   "/resetPasswordOtp",
   resendOtpValidator,
   baseValidator,
-  googleRecaptcha,
+  // googleRecaptcha,
   async (req: any, res: any) => {
     try {
       const data = await resendOtp(req.body, "OTP for Reseting password");
@@ -145,7 +145,7 @@ router.post(
   "/verifyResetPassword",
   verifyResetPasswordValidator,
   baseValidator,
-  googleRecaptcha,
+  // googleRecaptcha,
   async (req: any, res: any) => {
     try {
       const data = await verifyResetPassword(req.body);

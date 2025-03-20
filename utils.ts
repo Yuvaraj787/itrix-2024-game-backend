@@ -5,12 +5,13 @@ import axios from "axios";
 import rateLimit from "express-rate-limit";
 
 const transport = createTransport({
-  host: process.env.SMTP_SERVER,
-  port: 465,
-  secure: true,
+  // host: process.env.SMTP_SERVER,
+  // port: 587,
+  // secure: true,
+  service:"gmail",
   auth: {
-    user: process.env.EMAIL_ID,
-    pass: process.env.PASSWD,
+    user: process.env.SEMAIL_ID,
+    pass: process.env.SPASSWD,
   },
 });
 
