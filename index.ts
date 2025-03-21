@@ -20,7 +20,7 @@ import path from "path"
 import conn from "./mongodb"
 
 const app = express();
-const port = 443;
+const port = 3000;
 const server = http.createServer(app);
 
 app.use(express.static('public'))
