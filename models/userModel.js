@@ -39,4 +39,4 @@ username : string
     score: int
 */
 
-export const User = mongoose.model('User',userSchema);
+export const User = mongoose.model('ed2User',userSchema);

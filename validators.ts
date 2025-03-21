@@ -26,11 +26,6 @@ export const loginValidator = async (req, res, next) => {
     .run(req);
   await body("password").notEmpty().withMessage("Password is empty").run(req);
 
-  await body("recaptcha_token")
-    .isString()
-    .notEmpty()
-    .withMessage("google recaptcha not found")
-    .run(req);
 
   next();
 };
@@ -75,11 +70,11 @@ export const signupValidator = async (req, res, next) => {
     .withMessage("name is empty")
     .run(req);
 
-  await body("recaptcha_token")
-    .isString()
-    .notEmpty()
-    .withMessage("google recaptcha not found")
-    .run(req);
+  // await body("recaptcha_token")
+  //   .isString()
+  //   .notEmpty()
+  //   .withMessage("google recaptcha not found")
+  //   .run(req);
 
   next();
 };
@@ -96,11 +91,11 @@ export const otpValidator = async (req, res, next) => {
 
   await body("otp").notEmpty().withMessage("otp not found").run(req);
 
-  await body("recaptcha_token")
-    .isString()
-    .notEmpty()
-    .withMessage("google recaptcha not found")
-    .run(req);
+  // await body("recaptcha_token")
+  //   .isString()
+  //   .notEmpty()
+  //   .withMessage("google recaptcha not found")
+  //   .run(req);
 
   next();
 };
@@ -115,11 +110,11 @@ export const resendOtpValidator = async (req, res, next) => {
     .withMessage("Invalid email")
     .run(req);
     
-  await body("recaptcha_token")
-    .isString()
-    .notEmpty()
-    .withMessage("google recaptcha not found")
-    .run(req);
+  // await body("recaptcha_token")
+  //   .isString()
+  //   .notEmpty()
+  //   .withMessage("google recaptcha not found")
+  //   .run(req);
 
   next();
 };
@@ -157,11 +152,11 @@ export const verifyResetPasswordValidator = async (req, res, next) => {
     )
     .run(req);
 
-  await body("recaptcha_token")
-    .isString()
-    .notEmpty()
-    .withMessage("google recaptcha not found")
-    .run(req);
+  // await body("recaptcha_token")
+    // .isString()
+    // .notEmpty()
+    // .withMessage("google recaptcha not found")
+    // .run(req);
 
   next();
 };

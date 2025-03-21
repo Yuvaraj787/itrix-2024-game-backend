@@ -40,7 +40,7 @@ const clientPromise = Singleton.instance;
 async function createCollections() {
   // Your asynchronous code here
   const db = (await clientPromise).db("itrix");
-  const collectionName = ["users"];
+  const collectionName = ["users2"];
   
 
   const doesCollectionExist = await db

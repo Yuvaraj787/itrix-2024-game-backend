@@ -32,7 +32,6 @@ router.post(
   "/login",
   loginValidator,
   baseValidator,
-  // googleRecaptcha,
   async (req: any, res: any) => {
     console.log("received")
     try {

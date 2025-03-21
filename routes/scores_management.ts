@@ -6,12 +6,12 @@ const router = Router();
 
 function updateUserPoints(users) {
   return clientPromise.then(client => {
-    const db = client.db("itrix");
+    const db = client.db("itrixed");
 
     const promises = users.map(user => {
       console.log("inside promise");
       console.log(user);
-      return db.collection("users").updateOne(
+      return db.collection("usersed").updateOne(
         { name: user.username }, 
         {
           $inc: { score: user.score, matches_played: 1 }, 
@@ -21,7 +21,7 @@ function updateUserPoints(users) {
       ).then(() => {
         
         if (user.rank == 1) {
-          return db.collection("users").updateOne(
+          return db.collection("usersed").updateOne(
             { name: user.username }, 
             { $inc: { matches_won: 1 } } 
           );
@@ -42,7 +42,7 @@ function updateUserPoints(users) {
 
 function getCollectionDetails(collectionName) {
   return clientPromise.then(client => {
-    const db = client.db("itrix");
+    const db = client.db("itrixed");
 
     return db.collection(collectionName).find({}).toArray();
   }).then(collectionData => {
@@ -60,9 +60,9 @@ function getCollectionDetails(collectionName) {
 router.get("/", async (req, res) => {
     try {
       const client = await clientPromise;
-      const db = client.db("itrix");
+      const db = client.db("itrixed");
       
-      const users = await db.collection("users")
+      const users = await db.collection("usersed")
                             .find({})
                             .sort({ score: -1 }) 
                             .toArray();

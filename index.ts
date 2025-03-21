@@ -312,8 +312,8 @@ io.on("connection", async (socket) => {
     }
 
     if (isRoomHasStarted(roomid)) {
-      console.log("Room already started so denied to join. sorry about that")
-      socket.emit("already-started","too late to join")
+      console.log("Room already started bro. sorry for that")
+      socket.emit("already-started", "Room already started bro. Blame host " + getHostName(roomid) + " for that !")
       return;
     }
 

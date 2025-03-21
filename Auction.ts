@@ -9,6 +9,10 @@ import { deleteRoom } from "./index";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
+function getBaseScore(players, k = 4) {
+    return Math.round(10 + k * Math.pow(players - 2, 1.2));
+}
+
 async function run(gameData) {
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -31,6 +35,7 @@ async function run(gameData) {
 
         }
 
+
         for (let i = 0; i < len; i++) {
             missing[users[i]] = {
                 batting_score: 0,
@@ -43,12 +48,12 @@ async function run(gameData) {
 
         var missing_str = JSON.stringify(missing)
         console.log(missing_str)
-        const prompt = missing_str + ". These data contains information of various users and their respective cricket team players. now fill the batting_score (0 - 10), bowling_score(0 - 10), overall_score(0 - 10), rank and justification based on their balance of the team (consider the batting, bowling, captain and wicket-keeper and provide fair points for each field and justification (reason for your points)).Strictly No other things required. just fill the required fields (instead of 0 and '-' fill with scores. dont leave it with 0 and '-') and just give the js stringified object (I parse your response with JSON.parse() so give response such that parse() doesnt throw any errors)"
-
+        var totalScore = getBaseScore(len);
+        const prompt = missing_str + `. These data contains information of various users and their respective cricket team players. Now fill the batting_score (0 - ${totalScore}), bowling_score (0 - ${totalScore}), overall_score (0 - ${totalScore}), rank, and justification based on their balance of the team (consider the batting, bowling, captain, and wicketkeeper and provide fair points for each field and justification). Strictly no other things required. Just fill the required fields (instead of 0 and '-' fill with scores, don't leave it with 0 and '-'), and just give the JS stringified object (I parse your response with JSON.parse(), so give a response such that parse() doesn't throw any errors).`  
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        const text = response.text();
+        const text = response.text().replace(/```json\s*|\s*```/g, "");
         var obj = JSON.parse(text)
         console.log("Gemini provided results", obj)
         const resArr = []
@@ -69,12 +74,6 @@ async function run(gameData) {
         return {}
     }
 }
-
-// var sampleGameData = { "Yuvi": { "batting_score": 0, "bowling_score": 0, "overall_score": 0, "players": ["Rohit Sharma", "Ravindra Jadeja", "Aaron Finch", "D'Arcy Short", "Shehan Jayasuriya"], "justification": "-" }, "Yuvi-dev-test": { "batting_score": 0, "bowling_score": 0, "overall_score": 0, "players": ["Shaun Marsh", "Usman Khawaja", "Alex Hales", "Prithvi Shaw", "Mohammad Nawaz"], "justification": "-" } }
-
-// (async () => {
-//     console.log(await run(sampleGameData));
-// })();
 
 async function updateToDB(scores) {
     try {
@@ -121,8 +120,8 @@ class AuctionRoom {
         this.io = io
         this.roomid = roomid
         this.socket = socket
-        this.biddingTime = 3;
-        this.waitingTime = 3;
+        this.biddingTime = 2;
+        this.waitingTime = 1;
         this.counter = this.biddingTime
         this.users = {}
         console.log(users)

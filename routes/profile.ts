@@ -9,8 +9,8 @@ router.get("/api", middleware, async (req, res) => {
     try {
         console.log("triggered")
     const client = await clientPromise;
-    const db = client.db("itrix");
-    const User = db.collection("users")
+    const db = client.db("itrixed");
+    const User = db.collection("usersed")
     const person = await User.findOne({ email: req.data.email });
     console.log(req.data.email, person)
     res.json(person);
@@ -22,8 +22,8 @@ router.get("/api", middleware, async (req, res) => {
 router.get("/api/others",  async (req, res) => {
     try {
     const client = await clientPromise;
-    const db = client.db("itrix");
-    const User = db.collection("users")
+    const db = client.db("itrixed");
+    const User = db.collection("usersed")
     const person = await User.findOne({ name: req.query.name });
         console.log("triigered", person)
     res.json(person);
@@ -38,8 +38,8 @@ router.post("/updateFavoriteTeam", middleware, async (req, res) => {
         const { favouriteTeam } = req.body;
         var email = req.data.email;
         const client = await clientPromise;
-        const db = client.db("itrix");
-        const User = db.collection("users")
+        const db = client.db("itrixed");
+        const User = db.collection("usersed")
         await User.updateOne({ email }, { $set: {favoriteTeam: favouriteTeam} });
         console.log("Favorite team updated successfully");
         res.sendStatus(200);

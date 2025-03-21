@@ -26,9 +26,9 @@ const transport = createTransport({
 export async function signUp(data: any) {
   const { name, email, password } = data;
 
-  const db = (await clientPromise).db("itrix");
+  const db = (await clientPromise).db("itrixed");
 
-  const users = db.collection("users");
+  const users = db.collection("usersed");
 
   const isUserExist = await users.findOne({
     email,
@@ -90,9 +90,9 @@ export async function signUp(data: any) {
 export async function verifyOtp(data: any) {
   const { email, otp } = data;
 
-  const db = (await clientPromise).db("itrix");
+  const db = (await clientPromise).db("itrixed");
 
-  const users = db.collection("users");
+  const users = db.collection("usersed");
 
   const isUserExist = await users.findOne({
     email,
@@ -154,9 +154,9 @@ export async function verifyOtp(data: any) {
 export async function resendOtp(data: any, message: any) {
   const email = data.email;
 
-  const db = (await clientPromise).db("itrix");
+  const db = (await clientPromise).db("itrixed");
 
-  const users = db.collection("users");
+  const users = db.collection("usersed");
 
   const user = await users.findOne({
     email,
@@ -219,9 +219,9 @@ export async function resendOtp(data: any, message: any) {
 export async function login(data: any) {
   const { email, password } = data;
 
-  const db = (await clientPromise).db("itrix");
+  const db = (await clientPromise).db("itrixed");
 
-  const users = db.collection("users");
+  const users = db.collection("usersed");
 
   const isUserExist = await users.findOne({
     email,
@@ -276,9 +276,9 @@ export async function login(data: any) {
 export async function verifyResetPassword(data: any) {
   const { email, password, otp } = data;
 
-  const db = (await clientPromise).db("itrix");
+  const db = (await clientPromise).db("itrixed");
 
-  const users = db.collection("users");
+  const users = db.collection("usersed");
 
   const isUserExist = await users.findOne({
     email,
