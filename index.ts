@@ -118,6 +118,10 @@ app.get("/suggestRooms", middleware, (req, res) => {
   res.json(active_rooms);
 })
 
+app.get("/check", (req,res) => {
+  res.json({status:"Working and Okay"})
+})
+
 const io = new Server(server, {
   connectionStateRecovery: {},
   cors: {
